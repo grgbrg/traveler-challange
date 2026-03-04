@@ -246,16 +246,17 @@ header {
 .btn-screen {
   background:var(--gold); color:#000; border:none; border-radius:11px;
   padding:13px 34px; font-family:'DM Sans',sans-serif; font-size:.98rem;
-  font-weight:700; cursor:pointer; transition:background .2s,transform .1s; letter-spacing:.03em;
+  font-weight:700; cursor:pointer; transition:background .2s, filter .2s; letter-spacing:.03em;
 }
+.btn-screen:hover { background:var(--gold-light); filter:brightness(1.15); }
 [data-theme="light"] .btn-screen { background:#f5c842; color:#1a1a1a; }
-[data-theme="light"] .btn-screen:hover { background:#f0bb2a; transform:translateY(-1px); }
-.btn-screen:hover { background:var(--gold-light); transform:translateY(-1px); }
+[data-theme="light"] .btn-screen:hover { background:#fad96a; filter:none; }
 .btn-screen.sec {
   background:transparent; border:1px solid var(--border); color:var(--muted);
   margin-left:10px; font-weight:500;
 }
-.btn-screen.sec:hover { border-color:var(--text2); color:var(--text2); transform:none; }
+.btn-screen.sec:hover { border-color:var(--muted); color:var(--muted2); transform:none; }
+[data-theme="light"] .btn-screen.sec:hover { border-color:var(--gold); color:var(--gold); }
 .overlay-pass { border-color:var(--green)!important; }
 .overlay-fail { border-color:var(--red)!important; }
 .pass-title { color:var(--green)!important; }

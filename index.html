@@ -382,6 +382,10 @@ header {
 .share-copy { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
 .share-copy:hover { border-color:var(--gold); color:var(--gold); }
 </style>
+<!-- Firebase z defer — ładuje się równolegle, nie blokuje renderowania -->
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
 </head>
 <body>
 
@@ -436,7 +440,7 @@ header {
       Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>
       Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.
     </div>
-    <button class="btn-screen" onclick="startGame()" id="s_startBtn">Rozpocznij podróż →</button>
+    <button class="btn-screen" onclick="startGame()" id="s_startBtn">Rozpocznij grę →</button>
     <button class="btn-screen sec" onclick="showLB()" id="s_lbBtn">🏆 Tablica wyników</button>
   </div>
 </div>
@@ -1702,7 +1706,7 @@ const map = L.map('map',{
 // voyager_nolabels = jasna, czytelna mapa bez etykiet (dzień)
 // dark_matter_nolabels = ciemna bez etykiet (noc) — filtr CSS rozjaśnia
 const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
-const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
 const TILE_ATTR  = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
 
 let tileLayer = L.tileLayer(

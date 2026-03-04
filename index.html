@@ -348,6 +348,16 @@ header {
 .lb-tab:hover { border-color:var(--gold); color:var(--gold); }
 .lb-tab.selected { border-color:var(--gold-light); background:var(--gold-dim); color:var(--gold-light); }
 
+/* Leaderboard subtabs */
+.lb-subtabs { display:flex; gap:6px; margin-bottom:12px; }
+.lb-subtab {
+  flex:1; padding:7px 0; border:1.5px solid var(--border); border-radius:8px;
+  background:transparent; color:var(--muted2); font-family:'DM Sans',sans-serif;
+  font-size:.8rem; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.lb-subtab:hover { border-color:var(--muted); color:var(--muted); }
+.lb-subtab.selected { border-color:var(--gold); background:var(--gold-dim); color:var(--gold); }
+
 /* Language switcher */
 .lang-row { display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; }
 .lang-btn {
@@ -482,10 +492,15 @@ header {
 <div class="screen hidden" id="lbScreen">
   <div class="screen-box" style="max-width:560px">
     <div class="screen-title" id="lb_title">🏆 Tablica wyników</div>
+    <!-- Górne zakładki: Świat / Europa -->
     <div class="lb-tabs">
-      <button class="lb-tab selected" id="lbTabGlobal" onclick="switchLBTab('global')">🌐 <span id="lb_global">Globalny</span></button>
-      <button class="lb-tab" id="lbTabWorld" onclick="switchLBTab('world')">🌍 <span id="lb_world">Świat</span></button>
-      <button class="lb-tab" id="lbTabEurope" onclick="switchLBTab('europe')">🗺️ <span id="lb_europe">Europa</span></button>
+      <button class="lb-tab selected" id="lbTabWorld" onclick="switchLBMode('world')">🌍 <span id="lb_world">Świat</span></button>
+      <button class="lb-tab" id="lbTabEurope" onclick="switchLBMode('europe')">🗺️ <span id="lb_europe">Europa</span></button>
+    </div>
+    <!-- Dolne podzakładki: Globalne / Twoje -->
+    <div class="lb-subtabs">
+      <button class="lb-subtab selected" id="lbSubGlobal" onclick="switchLBSub('global')">🌐 <span id="lb_global">Globalne</span></button>
+      <button class="lb-subtab" id="lbSubLocal" onclick="switchLBSub('local')">👤 <span id="lb_yours">Twoje</span></button>
     </div>
     <table class="lb-table">
       <thead><tr><th>#</th><th>Nick</th><th id="lb_diff">Poziom</th><th style="text-align:right" id="lb_score">Wynik</th></tr></thead>
@@ -635,7 +650,8 @@ const I18N = {
     shareCopied:'Skopiowano!',
     // leaderboard
     lbTitle:'🏆 Tablica wyników',
-    lbGlobal:'🌐 Globalny', lbWorld:'Świat', lbEurope:'Europa',
+    lbGlobal:'🌐 Globalne', lbYours:'👤 Twoje',
+    lbWorld:'Świat', lbEurope:'Europa',
     lbDiff:'Poziom', lbScore:'Wynik',
     lbClose:'← Zamknij', lbClear:'🗑 Wyczyść',
     lbEmpty:'Brak wyników — zagraj jako pierwszy!',
@@ -709,7 +725,8 @@ Brakło: ${diff.toLocaleString('pl')} pkt
     shareCopied:'Copied!',
     // leaderboard
     lbTitle:'🏆 Leaderboard',
-    lbGlobal:'🌐 Global', lbWorld:'World', lbEurope:'Europe',
+    lbGlobal:'🌐 Global', lbYours:'👤 Yours',
+    lbWorld:'World', lbEurope:'Europe',
     lbDiff:'Difficulty', lbScore:'Score',
     lbClose:'← Close', lbClear:'🗑 Clear',
     lbEmpty:'No scores yet — be the first to play!',
@@ -796,6 +813,7 @@ function applyI18n(){
   // leaderboard
   st('lb_title', L.lbTitle);
   st('lb_global', L.lbGlobal);
+  st('lb_yours', L.lbYours);
   st('lb_world', L.lbWorld);
   st('lb_europe', L.lbEurope);
   st('lb_diff', L.lbDiff);
@@ -1743,7 +1761,7 @@ function haversine(la1,lo1,la2,lo2){
 }
 
 // ══ LEADERBOARD ═══════════════════════════════════════════════════════════
-// ══ LOCAL LEADERBOARD (localStorage) ════════════════════════════════════════
+// ── Local (localStorage) ──────────────────────────────────────────────────
 const LB_KEY_WORLD='tiqv4_lb_world', LB_KEY_EU='tiqv4_lb_europe';
 function lbKey(mode){return mode==='europe'?LB_KEY_EU:LB_KEY_WORLD;}
 function loadLB(mode){try{return JSON.parse(localStorage.getItem(lbKey(mode)))||[];}catch{return[];}}
@@ -1757,30 +1775,28 @@ function addScoreLocal(nick,score,diff,mode){
   return lb.findIndex(e=>e.nick===nick&&e.score===score);
 }
 
-// ══ GLOBAL LEADERBOARD (Firebase) ════════════════════════════════════════════
-const FB_LB_REF = 'leaderboard';
+// ── Global (Firebase) ─────────────────────────────────────────────────────
+const FB_REF_WORLD   = 'leaderboard_world';
+const FB_REF_EUROPE  = 'leaderboard_europe';
 const GLOBAL_LB_LIMIT = 10;
-// Rate limiting: max 1 zapis na 10 sekund per sesja
 let _lastSubmitTime = 0;
+
+function fbRef(mode){ return mode==='europe' ? FB_REF_EUROPE : FB_REF_WORLD; }
 
 function addScoreGlobal(nick, score, diff, mode){
   if(typeof fbDb === 'undefined') return Promise.resolve(-1);
   const now = Date.now();
   if(now - _lastSubmitTime < 10000) return Promise.resolve(-1);
   _lastSubmitTime = now;
-  // Walidacja po stronie klienta
   if(!nick || nick.length > 20 || score < 0 || score > 500000) return Promise.resolve(-1);
   const entry = { nick, score, diff, mode, ts: now };
-  return fbDb.ref(FB_LB_REF).push(entry)
-    .then(() => {
-      // Sprawdź czy wynik jest w top 10
-      return fbDb.ref(FB_LB_REF).orderByChild('score').limitToLast(GLOBAL_LB_LIMIT).once('value');
-    })
+  return fbDb.ref(fbRef(mode)).push(entry)
+    .then(() => fbDb.ref(fbRef(mode)).orderByChild('score').limitToLast(GLOBAL_LB_LIMIT).once('value'))
     .then(snap => {
       const entries = [];
       snap.forEach(c => entries.push(c.val()));
       entries.sort((a,b) => b.score - a.score);
-      return entries.findIndex(e => e.nick === nick && e.score === score);
+      return entries.findIndex(e => e.nick===nick && e.score===score);
     })
     .catch(() => -1);
 }
@@ -1791,8 +1807,9 @@ function addScore(nick, score, diff, mode){
   return localRank;
 }
 
-// ══ RENDER LEADERBOARD ════════════════════════════════════════════════════════
-let lbActiveTab = 'global';
+// ── Render ────────────────────────────────────────────────────────────────
+let lbActiveMode = 'world';   // 'world' | 'europe'
+let lbActiveSub  = 'global';  // 'global' | 'local'
 
 function renderLBRows(entries, hi=-1, emptyMsg=''){
   const body = document.getElementById('lbBody');
@@ -1802,7 +1819,7 @@ function renderLBRows(entries, hi=-1, emptyMsg=''){
     body.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);font-size:.9rem">${emptyMsg}</td></tr>`;
     return;
   }
-  body.innerHTML = entries.map((e,i) => `<tr class="${i===hi?'hl':''}">
+  body.innerHTML = entries.map((e,i)=>`<tr class="${i===hi?'hl':''}">
     <td class="lb-rank ${i<3?'top3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
     <td class="lb-nick">${e.nick}</td>
     <td><span class="lb-dbadge ${dcls[e.diff]||'lb-easy'}">${dlbl[e.diff]||e.diff}</span></td>
@@ -1812,48 +1829,56 @@ function renderLBRows(entries, hi=-1, emptyMsg=''){
 
 function renderLB(hi=-1){
   const body = document.getElementById('lbBody');
-  if(lbActiveTab === 'global'){
+  if(lbActiveSub === 'global'){
     if(typeof fbDb === 'undefined'){
-      body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--red);font-size:.9rem">⚠️ Błąd połączenia z Firebase</td></tr>`;
+      body.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--red);font-size:.9rem">⚠️ Błąd połączenia z Firebase</td></tr>`;
       return;
     }
-    body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);font-size:.9rem">⏳ Ładowanie...</td></tr>`;
-    fbDb.ref(FB_LB_REF).orderByChild('score').limitToLast(GLOBAL_LB_LIMIT).once('value')
+    body.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);font-size:.9rem">⏳ Ładowanie...</td></tr>`;
+    fbDb.ref(fbRef(lbActiveMode)).orderByChild('score').limitToLast(GLOBAL_LB_LIMIT).once('value')
       .then(snap => {
         const entries = [];
         snap.forEach(c => entries.push(c.val()));
         entries.sort((a,b) => b.score - a.score);
         renderLBRows(entries, hi, I18N[LANG].lbEmptyGlobal);
       })
-      .catch(() => {
-        body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--red);font-size:.9rem">⚠️ Błąd połączenia</td></tr>`;
+      .catch(()=>{
+        body.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--red);font-size:.9rem">⚠️ Błąd połączenia</td></tr>`;
       });
   } else {
-    const entries = loadLB(lbActiveTab);
-    renderLBRows(entries, hi, I18N[LANG].lbEmpty);
+    renderLBRows(loadLB(lbActiveMode), hi, I18N[LANG].lbEmpty);
   }
 }
 
-function switchLBTab(mode){
-  lbActiveTab = mode;
-  document.getElementById('lbTabGlobal').classList.toggle('selected', mode==='global');
+function switchLBMode(mode){
+  lbActiveMode = mode;
   document.getElementById('lbTabWorld').classList.toggle('selected', mode==='world');
   document.getElementById('lbTabEurope').classList.toggle('selected', mode==='europe');
   renderLB();
 }
 
+function switchLBSub(sub){
+  lbActiveSub = sub;
+  document.getElementById('lbSubGlobal').classList.toggle('selected', sub==='global');
+  document.getElementById('lbSubLocal').classList.toggle('selected', sub==='local');
+  renderLB();
+}
+
 function showLB(hi=-1){
-  lbActiveTab = 'global';
-  document.getElementById('lbTabGlobal').classList.add('selected');
-  document.getElementById('lbTabWorld').classList.remove('selected');
-  document.getElementById('lbTabEurope').classList.remove('selected');
+  // otwórz na trybie aktualnej gry, podzakładka globalna
+  lbActiveMode = (G && G.mode) ? G.mode : 'world';
+  lbActiveSub  = 'global';
+  document.getElementById('lbTabWorld').classList.toggle('selected', lbActiveMode==='world');
+  document.getElementById('lbTabEurope').classList.toggle('selected', lbActiveMode==='europe');
+  document.getElementById('lbSubGlobal').classList.add('selected');
+  document.getElementById('lbSubLocal').classList.remove('selected');
   renderLB(hi);
   document.getElementById('lbScreen').classList.remove('hidden');
 }
 function hideLB(){document.getElementById('lbScreen').classList.add('hidden');}
 function clearLB(){
-  if(lbActiveTab==='global'){alert('Globalnego rankingu nie można wyczyścić lokalnie.');return;}
-  if(confirm(I18N[LANG].lbConfirmClear)){saveLB([],lbActiveTab);renderLB();}
+  if(lbActiveSub==='global'){alert(LANG==='pl'?'Globalnego rankingu nie można wyczyścić lokalnie.':'Global leaderboard cannot be cleared locally.');return;}
+  if(confirm(I18N[LANG].lbConfirmClear)){saveLB([],lbActiveMode);renderLB();}
 }
 
 // ══ THEME ═════════════════════════════════════════════════════════════════

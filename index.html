@@ -1,0 +1,2095 @@
+<!DOCTYPE html>
+<html lang="pl" data-lang="pl" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traveler Challenge</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── THEMES ──────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:#0d1117; --panel:#161b22; --panel2:#1c2433;
+  --border:#2d3748; --gold:#d4a017; --gold-light:#f0c040; --gold-dim:rgba(240,192,64,.13);
+  --red:#e05252; --green:#4caf7d; --purple:#8b5cf6;
+  --text:#e6edf3; --text2:#c9d1da; --muted:#8b949e; --muted2:#5a6472;
+  --card-bg:linear-gradient(150deg,#1a2c42,#0f1824);
+  --card-border:#2a4060; --shadow:0 8px 32px rgba(0,0,0,.55);
+  --map-filter:grayscale(1) brightness(0.65) contrast(1.9);
+  --overlay-bg:rgba(13,17,23,.92);
+  --badge-easy-bg:rgba(76,175,125,.18); --badge-med-bg:rgba(240,192,64,.18); --badge-hard-bg:rgba(224,82,82,.18);
+}
+[data-theme="light"] {
+  --bg:#eef2f7; --panel:#ffffff; --panel2:#f5f8fc;
+  --border:#ccd8e8; --gold:#b8860b; --gold-light:#c8960c; --gold-dim:rgba(184,134,11,.1);
+  --red:#c0392b; --green:#27ae60; --purple:#6c3fc5;
+  --text:#1a202c; --text2:#2d3748; --muted:#64748b; --muted2:#94a3b8;
+  --card-bg:linear-gradient(150deg,#dbeafe,#eff6ff);
+  --card-border:#93c5fd; --shadow:0 4px 20px rgba(0,0,0,.1);
+  --map-filter:none;
+  --overlay-bg:rgba(255,255,255,.93);
+  --badge-easy-bg:rgba(39,174,96,.13); --badge-med-bg:rgba(184,134,11,.13); --badge-hard-bg:rgba(192,57,43,.13);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; display:flex; flex-direction:column; transition:background .3s,color .3s; }
+
+/* ══════════════════════════════════════════════════════
+   HEADER — duży, czytelny
+══════════════════════════════════════════════════════ */
+header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; height:82px; flex-shrink:0;
+  background:var(--panel); border-bottom:2px solid var(--border);
+  box-shadow:0 3px 16px rgba(0,0,0,.25); z-index:1000;
+  gap:20px;
+}
+.logo {
+  font-family:'Playfair Display',serif; font-size:1.45rem;
+  color:var(--gold-light); letter-spacing:.04em; white-space:nowrap; flex-shrink:0;
+}
+.logo em { color:var(--muted); font-style:normal; font-weight:300; font-size:.82rem; margin-left:7px; }
+
+/* Stats row */
+.header-stats { display:flex; align-items:center; gap:22px; flex:1; justify-content:center; flex-wrap:nowrap; }
+.hstat { text-align:center; min-width:62px; }
+.hstat-val {
+  font-family:'Playfair Display',serif; font-size:2rem; font-weight:700;
+  color:var(--gold-light); line-height:1;
+}
+.hstat-lbl {
+  font-size:.72rem; color:var(--muted); text-transform:uppercase;
+  letter-spacing:.12em; margin-top:4px; font-weight:700;
+}
+.hstat-sep { width:1px; height:44px; background:var(--border); flex-shrink:0; }
+
+/* Level badge */
+.lvl-badge {
+  display:flex; align-items:center; gap:9px;
+  padding:7px 16px; border-radius:26px;
+  background:var(--panel2); border:1px solid var(--border);
+}
+.badge-dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+.badge-lbl { font-size:.98rem; color:var(--text); font-weight:700; white-space:nowrap; }
+
+/* Diff badge */
+.diff-badge {
+  font-size:.82rem; font-weight:700; padding:5px 13px;
+  border-radius:13px; text-transform:uppercase; letter-spacing:.08em;
+  white-space:nowrap; flex-shrink:0;
+}
+.diff-easy  { background:var(--badge-easy-bg); color:var(--green);  border:1px solid var(--green); }
+.diff-med   { background:var(--badge-med-bg);  color:var(--gold);   border:1px solid var(--gold); }
+.diff-hard  { background:var(--badge-hard-bg); color:var(--red);    border:1px solid var(--red); }
+
+/* Timer */
+.timer-group { display:flex; flex-direction:column; align-items:center; gap:5px; }
+.timer-bar-bg { width:140px; height:10px; background:var(--border); border-radius:5px; overflow:hidden; }
+.timer-bar { height:100%; background:var(--gold); border-radius:5px; transition:width 1s linear, background .3s; }
+.timer-bar.urgent { background:var(--red); }
+.timer-val {
+  font-family:'Playfair Display',serif; font-size:2.8rem; font-weight:900;
+  color:var(--gold-light); line-height:1; min-width:2ch; text-align:center;
+  transition:color .2s;
+}
+.timer-val.urgent { color:var(--red); }
+.timer-group.panic .timer-val {
+  color:var(--red);
+  animation:timerPanic .4s ease-in-out infinite alternate;
+  text-shadow:0 0 18px rgba(224,82,82,.8);
+}
+.timer-group.panic .timer-bar-bg {
+  box-shadow:0 0 10px rgba(224,82,82,.6);
+}
+@keyframes timerPanic {
+  from { transform:scale(1); }
+  to   { transform:scale(1.2); }
+}
+.timer-lbl-sm { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; font-weight:600; }
+
+/* Header buttons */
+.hdr-btns { display:flex; gap:9px; align-items:center; flex-shrink:0; }
+.btn-hdr {
+  background:transparent; border:1px solid var(--border); color:var(--muted);
+  border-radius:9px; padding:7px 15px; font-size:.85rem; font-family:'DM Sans',sans-serif;
+  cursor:pointer; transition:all .2s; white-space:nowrap; font-weight:600;
+}
+.btn-hdr:hover { border-color:var(--gold); color:var(--gold); }
+.btn-hdr.danger:hover { border-color:var(--red); color:var(--red); }
+
+/* ══════════════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════════════ */
+.game-area { display:flex; flex:1; overflow:hidden; position:relative; }
+
+/* MAP */
+#map { flex:1; cursor:crosshair; }
+.leaflet-control-zoom { display:none!important; }
+.leaflet-control-attribution { font-size:8px!important; opacity:.2; }
+.leaflet-tile { filter:var(--map-filter); }
+/* Tło za kafelkami (obcięte pasy) */
+.leaflet-container { background:var(--map-bg) !important; }
+[data-theme="dark"]  { --map-bg:#0a0e14; }
+[data-theme="light"] { --map-bg:#b8cde0; }
+
+/* ══════════════════════════════════════════════════════
+   MAP OVERLAY — wynik bezpośrednio na mapie
+══════════════════════════════════════════════════════ */
+#mapOverlay {
+  position:absolute; bottom:36px; left:50%; transform:translateX(-50%);
+  z-index:500; pointer-events:none; display:none;
+  width:max-content; max-width:600px;
+}
+#mapOverlay.show { display:block; pointer-events:auto; }
+.mo-box {
+  background:var(--overlay-bg); border:1.5px solid var(--border);
+  border-radius:20px; padding:22px 32px;
+  box-shadow:0 12px 50px rgba(0,0,0,.6), 0 0 0 1px rgba(212,160,23,.1);
+  display:flex; align-items:center; gap:28px;
+  backdrop-filter:blur(16px);
+}
+.mo-dist-wrap { text-align:center; min-width:130px; }
+.mo-dist-lbl { font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.16em; margin-bottom:4px; font-weight:700; }
+.mo-dist-val { font-family:'Playfair Display',serif; font-size:2.6rem; color:var(--text); line-height:1; font-weight:700; }
+.mo-dist-val em { font-style:normal; font-size:1.1rem; color:var(--muted); margin-left:3px; }
+.mo-sep { width:1.5px; height:60px; background:var(--border); }
+.mo-pts-wrap { text-align:center; min-width:130px; }
+.mo-pts-lbl { font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.16em; margin-bottom:4px; font-weight:700; }
+.mo-pts-val { font-family:'Playfair Display',serif; font-size:2.6rem; line-height:1; font-weight:700; }
+.mo-pts-val.good { color:var(--green); }
+.mo-pts-val.ok   { color:var(--gold-light); }
+.mo-pts-val.bad  { color:var(--red); }
+.mo-btn {
+  background:var(--gold); color:#000; border:none; border-radius:12px;
+  padding:14px 26px; font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:700;
+  cursor:pointer; transition:background .2s, transform .1s; white-space:nowrap;
+  box-shadow:0 4px 16px rgba(212,160,23,.35);
+}
+.mo-btn:hover { background:var(--gold-light); transform:translateY(-2px); }
+.mo-timeout { font-size:.85rem; color:var(--red); font-weight:700; text-align:center; margin-top:4px; }
+.mo-time-bonus { font-size:.82rem; color:var(--green); font-weight:700; text-align:center; margin-top:5px; letter-spacing:.02em; }
+
+/* ══════════════════════════════════════════════════════
+   SIDEBAR — kompaktowy, miasto jako dominujący element
+══════════════════════════════════════════════════════ */
+.sidebar {
+  width:375px; flex-shrink:0;
+  background:var(--panel); border-left:1px solid var(--border);
+  display:flex; flex-direction:column; gap:14px;
+  padding:16px 13px; z-index:100; overflow-y:auto;
+}
+
+/* City card — główny akcent, dominujący */
+.city-card {
+  background:var(--card-bg); border:2px solid var(--card-border);
+  border-radius:18px; padding:24px 16px 20px; text-align:center;
+  box-shadow:var(--shadow), 0 0 0 1px rgba(212,160,23,.08);
+  position:relative; overflow:hidden;
+}
+.city-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity:.6;
+}
+.city-prompt { font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.25em; margin-bottom:10px; font-weight:700; }
+.city-name {
+  font-family:'Playfair Display',serif; font-size:2.6rem; font-weight:900;
+  color:var(--text); line-height:1.12; margin-bottom:12px;
+  text-shadow:0 2px 12px rgba(0,0,0,.3);
+  word-break:break-word; hyphens:auto; overflow-wrap:break-word;
+}
+.city-divider { width:50px; height:3px; background:var(--gold); border-radius:2px; margin:0 auto 12px; box-shadow:0 0 8px rgba(212,160,23,.4); }
+.city-country { font-size:1.3rem; font-weight:700; color:var(--gold-light); min-height:1.6em; letter-spacing:.02em; }
+.city-country.unknown { color:var(--muted); font-style:italic; font-size:1.05rem; font-weight:400; }
+
+/* Progress — wyraźny */
+.progress-wrap { background:var(--panel2); border:1px solid var(--border); border-radius:12px; padding:12px 13px; }
+.prog-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.prog-title { font-size:.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; font-weight:700; }
+.prog-score { font-family:'Playfair Display',serif; font-size:1.25rem; color:var(--gold-light); font-weight:700; }
+.prog-bg { height:12px; background:var(--border); border-radius:6px; overflow:hidden; position:relative; }
+.prog-bar { height:100%; border-radius:6px; transition:width .4s ease; }
+.prog-thr-line { position:relative; height:9px; }
+.prog-thr-tick { position:absolute; top:0; width:2px; height:9px; background:rgba(160,180,210,.7); border-radius:1px; transform:translateX(-50%); }
+.prog-thr-row { position:relative; height:16px; }
+.prog-thr-lbl { position:absolute; font-size:.62rem; color:var(--muted); transform:translateX(-50%); font-weight:700; white-space:nowrap; }
+
+/* Max points display */
+.prog-max { font-size:.68rem; color:var(--muted2); margin-top:4px; text-align:right; }
+
+/* Tier info */
+.tier-row { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; }
+.tier-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.tier-name { font-size:.85rem; color:var(--text2); font-weight:700; }
+.tier-q { font-size:.8rem; color:var(--muted); font-weight:600; }
+
+/* ══════════════════════════════════════════════════════
+   MODAL SCREENS
+══════════════════════════════════════════════════════ */
+.screen {
+  position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+  z-index:9999; backdrop-filter:blur(10px);
+  background:rgba(0,0,0,.82);
+}
+[data-theme="light"] .screen { background:rgba(200,215,230,.7); }
+.screen-box {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:22px; padding:38px 46px; text-align:center;
+  max-width:540px; width:94%; box-shadow:var(--shadow);
+}
+.screen-title { font-family:'Playfair Display',serif; font-size:2.6rem; color:var(--gold-light); margin-bottom:8px; }
+.screen-sub { color:var(--muted); font-size:.92rem; line-height:1.8; margin-bottom:22px; }
+.screen-score { font-family:'Playfair Display',serif; font-size:3.8rem; color:var(--gold-light); margin:10px 0; line-height:1; }
+.screen-detail { font-size:.86rem; color:var(--muted); margin-bottom:20px; line-height:1.7; white-space:pre-line; }
+.btn-screen {
+  background:var(--gold); color:#000; border:none; border-radius:11px;
+  padding:13px 34px; font-family:'DM Sans',sans-serif; font-size:.98rem;
+  font-weight:700; cursor:pointer; transition:background .2s,transform .1s; letter-spacing:.03em;
+}
+.btn-screen:hover { background:var(--gold-light); transform:translateY(-1px); }
+.btn-screen.sec {
+  background:transparent; border:1px solid var(--border); color:var(--muted);
+  margin-left:10px; font-weight:500;
+}
+.btn-screen.sec:hover { border-color:var(--text2); color:var(--text2); transform:none; }
+.overlay-pass { border-color:var(--green)!important; }
+.overlay-fail { border-color:var(--red)!important; }
+.pass-title { color:var(--green)!important; }
+.fail-title { color:var(--red)!important; }
+.hidden { display:none!important; }
+
+/* Bonus block */
+.bonus-block {
+  background:var(--gold-dim); border:1px solid rgba(240,192,64,.4);
+  border-radius:11px; padding:12px 16px; margin:0 0 18px;
+}
+.bonus-title { font-size:.7rem; color:var(--gold); text-transform:uppercase; letter-spacing:.15em; margin-bottom:3px; font-weight:700; }
+.bonus-pts { font-family:'Playfair Display',serif; font-size:1.9rem; color:var(--gold-light); line-height:1; }
+.bonus-desc { font-size:.76rem; color:var(--muted); margin-top:3px; }
+
+/* TOP10 */
+.top10-banner {
+  background:linear-gradient(135deg,rgba(212,160,23,.18),rgba(76,175,125,.08));
+  border:1px solid var(--gold); border-radius:12px; padding:14px; margin-bottom:18px;
+}
+.top10-title { font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--gold-light); margin-bottom:3px; }
+.top10-sub { font-size:.82rem; color:var(--muted); }
+
+/* ══════════════════════════════════════════════════════
+   START SCREEN
+══════════════════════════════════════════════════════ */
+.start-logo { font-family:'Playfair Display',serif; font-size:3rem; font-weight:900; color:var(--gold-light); margin-bottom:4px; }
+.start-tagline { font-size:.86rem; color:var(--muted); margin-bottom:26px; letter-spacing:.04em; }
+.start-form { display:flex; flex-direction:column; gap:14px; margin-bottom:22px; }
+.input-group { text-align:left; }
+.input-lbl { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin-bottom:5px; display:block; font-weight:700; }
+.nick-input {
+  width:100%; background:var(--panel2); border:1.5px solid var(--border); border-radius:9px;
+  padding:11px 14px; font-family:'DM Sans',sans-serif; font-size:1rem; color:var(--text);
+  transition:border-color .2s; outline:none;
+}
+.nick-input:focus { border-color:var(--gold); }
+.nick-input::placeholder { color:var(--muted2); }
+.diff-selector { display:flex; gap:8px; }
+.diff-opt { flex:1; padding:10px 8px; border:2px solid var(--border); border-radius:10px; background:var(--panel2); cursor:pointer; transition:all .2s; text-align:center; }
+.diff-opt:hover { border-color:var(--gold); }
+.diff-opt.selected { border-color:var(--gold-light); background:var(--gold-dim); }
+.mode-opt { flex:1; padding:9px 7px; border:2px solid var(--border); border-radius:9px; background:var(--panel2); cursor:pointer; transition:all .2s; text-align:center; }
+.mode-opt:hover { border-color:var(--gold); }
+.mode-opt.selected { border-color:var(--gold-light); background:var(--gold-dim); }
+.diff-opt-name { font-size:.88rem; font-weight:700; }
+.diff-opt-info { font-size:.68rem; color:var(--muted); margin-top:3px; line-height:1.45; }
+.start-rules {
+  background:var(--panel2); border:1px solid var(--border); border-radius:10px;
+  padding:12px 14px; text-align:left; font-size:.82rem; color:var(--muted);
+  line-height:1.9; margin-bottom:20px;
+}
+.start-rules strong { color:var(--text2); }
+.theme-row { display:flex; justify-content:flex-end; margin-bottom:14px; }
+
+/* ══════════════════════════════════════════════════════
+   LEADERBOARD
+══════════════════════════════════════════════════════ */
+.lb-table { width:100%; border-collapse:collapse; margin:14px 0 22px; }
+.lb-table th { font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; font-weight:700; }
+.lb-table td { padding:9px 8px; border-bottom:1px solid var(--border); font-size:.92rem; vertical-align:middle; }
+.lb-table tr:last-child td { border-bottom:none; }
+.lb-table tr.hl td { background:var(--gold-dim); }
+.lb-rank { font-family:'Playfair Display',serif; font-weight:700; font-size:1.05rem; color:var(--muted); width:32px; }
+.lb-rank.top3 { color:var(--gold-light); }
+.lb-nick { font-weight:600; color:var(--text); }
+.lb-score { font-family:'Playfair Display',serif; font-weight:700; font-size:1.1rem; color:var(--gold-light); text-align:right; }
+.lb-dbadge { font-size:.63rem; font-weight:700; padding:2px 7px; border-radius:8px; text-transform:uppercase; letter-spacing:.06em; display:inline-block; border:1px solid; }
+.lb-easy { background:var(--badge-easy-bg); color:var(--green); border-color:var(--green); }
+.lb-med  { background:var(--badge-med-bg);  color:var(--gold);  border-color:var(--gold); }
+.lb-hard { background:var(--badge-hard-bg); color:var(--red);   border-color:var(--red); }
+
+/* ── MARKERS ── */
+.marker-red, .marker-green { width:18px; height:18px; border-radius:50%; border:3px solid #fff; box-shadow:0 2px 10px rgba(0,0,0,.7); }
+.marker-red   { background:#e05252; }
+.marker-green { background:#4caf7d; }
+.leaflet-tooltip {
+  background:var(--panel)!important; border:1px solid var(--border)!important;
+  color:var(--text)!important; font-family:'DM Sans',sans-serif!important;
+  font-size:12px!important; font-weight:700!important; padding:4px 9px!important;
+  border-radius:7px!important; box-shadow:0 3px 10px rgba(0,0,0,.4)!important;
+}
+.leaflet-tooltip::before { display:none!important; }
+
+/* Leaderboard tabs */
+.lb-tabs { display:flex; gap:8px; margin-bottom:14px; }
+.lb-tab {
+  flex:1; padding:9px 0; border:2px solid var(--border); border-radius:10px;
+  background:var(--panel2); color:var(--muted); font-family:'DM Sans',sans-serif;
+  font-size:.9rem; font-weight:700; cursor:pointer; transition:all .2s;
+}
+.lb-tab:hover { border-color:var(--gold); color:var(--gold); }
+.lb-tab.selected { border-color:var(--gold-light); background:var(--gold-dim); color:var(--gold-light); }
+
+/* Language switcher */
+.lang-row { display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; }
+.lang-btn {
+  padding:5px 14px; border:2px solid var(--border); border-radius:8px;
+  background:var(--panel2); color:var(--muted); font-family:'DM Sans',sans-serif;
+  font-size:.8rem; font-weight:700; cursor:pointer; transition:all .2s; letter-spacing:.04em;
+}
+.lang-btn:hover { border-color:var(--gold); color:var(--gold); }
+.lang-btn.active { border-color:var(--gold-light); background:var(--gold-dim); color:var(--gold-light); }
+
+/* Share buttons */
+.share-row { display:flex; gap:8px; justify-content:center; margin-top:14px; flex-wrap:wrap; }
+.share-btn {
+  display:flex; align-items:center; gap:6px;
+  padding:9px 16px; border-radius:10px; border:none;
+  font-family:'DM Sans',sans-serif; font-size:.85rem; font-weight:700;
+  cursor:pointer; transition:all .2s; text-decoration:none; color:#fff;
+}
+.share-btn:hover { transform:translateY(-2px); opacity:.9; }
+.share-twitter { background:#000; }
+.share-facebook { background:#1877f2; }
+.share-copy { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
+.share-copy:hover { border-color:var(--gold); color:var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- ══ START ══════════════════════════════════════════════════════════════ -->
+<div class="screen" id="startScreen">
+  <div class="screen-box" style="max-width:510px">
+    <div class="lang-row">
+      <button class="lang-btn active" id="langBtnPL" onclick="setLang('pl')">🇵🇱 PL</button>
+      <button class="lang-btn" id="langBtnEN" onclick="setLang('en')">🇬🇧 EN</button>
+    </div>
+    <div class="theme-row">
+      <button class="btn-hdr" onclick="toggleTheme()" id="themeBtn">☀️ Jasny motyw</button>
+    </div>
+    <div class="start-logo">Traveler Challenge</div>
+    <div class="start-tagline" id="s_tagline">Sprawdź, czy znasz miasta świata</div>
+    <div class="start-form">
+      <div class="input-group">
+        <label class="input-lbl" for="nickInput" id="s_nickLbl">Twój nick</label>
+        <input class="nick-input" id="nickInput" type="text" placeholder="Wpisz nick..." maxlength="20" autocomplete="off" required>
+      </div>
+      <div class="input-group">
+        <label class="input-lbl" id="s_modeLbl">Tryb gry</label>
+        <div class="diff-selector" style="margin-bottom:10px">
+          <div class="mode-opt selected" data-mode="world" onclick="selectMode(this)">
+            <div class="diff-opt-name" style="color:var(--text2)">🌍 <span id="s_modeWorld">Świat</span></div>
+            <div class="diff-opt-info" id="s_modeWorldInfo">Miasta całego świata</div>
+          </div>
+          <div class="mode-opt" data-mode="europe" onclick="selectMode(this)">
+            <div class="diff-opt-name" style="color:var(--gold)">🗺️ <span id="s_modeEurope">Europa</span></div>
+            <div class="diff-opt-info" id="s_modeEuropeInfo">Miasta Europy</div>
+          </div>
+        </div>
+        <label class="input-lbl" id="s_diffLbl">Poziom trudności</label>
+        <div class="diff-selector">
+          <div class="diff-opt selected" data-diff="easy" onclick="selectDiff(this)">
+            <div class="diff-opt-name" style="color:var(--green)" id="s_easy">Łatwy</div>
+            <div class="diff-opt-info" id="s_easyInfo">Widoczne kraje.<br>Stały próg zaliczenia.</div>
+          </div>
+          <div class="diff-opt" data-diff="medium" onclick="selectDiff(this)">
+            <div class="diff-opt-name" style="color:var(--gold)" id="s_medium">Średni</div>
+            <div class="diff-opt-info" id="s_mediumInfo">Widoczne kraje.<br>Malejący próg.<br><strong>Więcej punktów!</strong></div>
+          </div>
+          <div class="diff-opt" data-diff="hard" onclick="selectDiff(this)">
+            <div class="diff-opt-name" style="color:var(--red)" id="s_hard">Trudny</div>
+            <div class="diff-opt-info" id="s_hardInfo">Bez krajów.<br>Malejący próg.<br>Jeszcze więcej punktów!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="start-rules" id="s_rules">
+      <strong>Wskaż miasto na mapie zanim upłynie czas.</strong><br>
+      Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>
+      Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.
+    </div>
+    <button class="btn-screen" onclick="startGame()" id="s_startBtn">Rozpocznij podróż →</button>
+    <button class="btn-screen sec" onclick="showLB()" id="s_lbBtn">🏆 Tablica wyników</button>
+  </div>
+</div>
+
+<!-- ══ LEVEL PASS ══════════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="lvlPassScreen">
+  <div class="screen-box overlay-pass">
+    <div class="screen-title pass-title" id="lvlPassTitle">Zaliczono!</div>
+    <div class="screen-score" id="lvlPassScore">0</div>
+    <div class="bonus-block hidden" id="bonusBlock">
+      <div class="bonus-title">★ Bonus</div>
+      <div class="bonus-pts" id="bonusPts">+1 500 pkt</div>
+      <div class="bonus-desc" id="bonus_desc">Zaliczono za pierwszym razem w tej rozgrywce!</div>
+    </div>
+    <p class="screen-detail" id="lvlPassDetail"></p>
+    <button class="btn-screen" id="lvlPassBtn" onclick="nextLevel()">Następny poziom →</button>
+  </div>
+</div>
+
+<!-- ══ LEVEL FAIL ══════════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="lvlFailScreen">
+  <div class="screen-box overlay-fail">
+    <div class="screen-title fail-title" id="fail_title">Nie zaliczono!</div>
+    <div class="screen-score" id="lvlFailScore">0</div>
+    <p class="screen-detail" id="lvlFailDetail"></p>
+    <button class="btn-screen" onclick="retryLevel()" id="fail_retry">↺ Spróbuj ponownie</button>
+    <button class="btn-screen sec" onclick="resignAndSave()" id="fail_resign" style="margin-left:0;margin-top:10px;display:block;width:100%">Zakończ i zapisz wynik</button>
+    <button class="btn-screen sec" onclick="goToStart()" id="fail_menu" style="margin-left:0;margin-top:8px;display:block;width:100%">✕ Menu główne (bez zapisu)</button>
+  </div>
+</div>
+
+<!-- ══ END SCREEN ══════════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="endScreen">
+  <div class="screen-box">
+    <div class="top10-banner hidden" id="top10Banner">
+      <div class="top10-title" id="e_top10title">🎉 Jesteś w Top 10!</div>
+      <div class="top10-sub" id="top10Sub"></div>
+    </div>
+    <div class="screen-title" id="endTitle">Koniec gry!</div>
+    <div class="screen-score" id="endScore">0</div>
+    <p class="screen-sub" id="endSub"></p>
+    <button class="btn-screen" onclick="goToStart()" id="e_playAgain">Zagraj ponownie</button>
+    <button class="btn-screen sec" onclick="showLB()" id="e_lbBtn">🏆 Tablica wyników</button>
+    <div class="share-row">
+      <button class="share-btn share-twitter" onclick="shareTwitter()">𝕏 <span id="e_shareTwitter">Udostępnij</span></button>
+      <button class="share-btn share-facebook" onclick="shareFacebook()">f <span id="e_shareFB">Facebook</span></button>
+      <button class="share-btn share-copy" onclick="shareClipboard()">📋 <span id="e_shareCopy">Kopiuj wynik</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEADERBOARD ══════════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="lbScreen">
+  <div class="screen-box" style="max-width:560px">
+    <div class="screen-title" id="lb_title">🏆 Tablica wyników</div>
+    <div class="lb-tabs">
+      <button class="lb-tab selected" id="lbTabWorld" onclick="switchLBTab('world')">🌍 <span id="lb_world">Świat</span></button>
+      <button class="lb-tab" id="lbTabEurope" onclick="switchLBTab('europe')">🗺️ <span id="lb_europe">Europa</span></button>
+    </div>
+    <table class="lb-table">
+      <thead><tr><th>#</th><th>Nick</th><th id="lb_diff">Poziom</th><th style="text-align:right" id="lb_score">Wynik</th></tr></thead>
+      <tbody id="lbBody"></tbody>
+    </table>
+    <button class="btn-screen sec" onclick="hideLB()" id="lb_close">← Zamknij</button>
+    <button class="btn-screen sec" onclick="clearLB()" id="lb_clear" style="margin-left:8px;color:var(--red);border-color:var(--red)">🗑 Wyczyść</button>
+  </div>
+</div>
+
+<!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo" onclick="goToStart()" style="cursor:pointer" title="Menu główne" id="logoTitle">Traveler <em>Challenge</em></div>
+
+  <div class="header-stats">
+    <div class="lvl-badge">
+      <div class="badge-dot" id="badgeDot"></div>
+      <span class="badge-lbl" id="badgeLbl">Poziom 1</span>
+    </div>
+    <span class="diff-badge diff-easy" id="diffBadge">Łatwy</span>
+
+    <div class="hstat-sep"></div>
+    <div class="hstat">
+      <div class="hstat-val" id="scoreDisplay">0</div>
+      <div class="hstat-lbl" id="h_lvlLbl">Poziom</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="totalDisplay">0</div>
+      <div class="hstat-lbl" id="h_totalLbl">Łącznie</div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-val" id="qDisplay">1/8</div>
+      <div class="hstat-lbl" id="h_qLbl">Pytanie</div>
+    </div>
+    <div class="hstat-sep"></div>
+    <div class="timer-group" id="timerGroup">
+      <div class="timer-val" id="timerVal">15</div>
+      <div class="timer-bar-bg"><div class="timer-bar" id="timerBar"></div></div>
+      <div class="timer-lbl-sm" id="h_secLbl">sekund</div>
+    </div>
+  </div>
+
+  <div class="hdr-btns">
+    <button class="btn-hdr" onclick="map.zoomIn()" title="Przybliż">＋</button>
+    <button class="btn-hdr" onclick="map.zoomOut()" title="Oddal">－</button>
+    <button class="btn-hdr" onclick="resetView()" title="Pełny widok">⊡</button>
+    <button class="btn-hdr danger" onclick="confirmRestart()"><span id="h_restart">↺ Restart</span></button>
+    <button class="btn-hdr" onclick="showLB()">🏆</button>
+    <button class="btn-hdr" onclick="toggleTheme()" id="themeBtnHdr">☀️</button>
+  </div>
+</header>
+
+<!-- ══ GAME AREA ══════════════════════════════════════════════════════════ -->
+<div class="game-area">
+  <div id="map"></div>
+
+  <!-- MAP OVERLAY — wynik bezpośrednio na mapie -->
+  <div id="mapOverlay">
+    <div class="mo-box" id="moBox">
+      <div class="mo-dist-wrap">
+        <div class="mo-dist-lbl" id="mo_distLbl">Odległość</div>
+        <div class="mo-dist-val" id="moDist">–</div>
+        <div class="mo-timeout hidden" id="moTimeout">⏱ <span id="mo_timeout">Czas minął!</span></div>
+      </div>
+      <div class="mo-sep"></div>
+      <div class="mo-pts-wrap">
+        <div class="mo-pts-lbl" id="mo_ptsLbl">Punkty</div>
+        <div class="mo-pts-val" id="moPts">–</div>
+        <div class="mo-time-bonus hidden" id="moTimeBonus"></div>
+      </div>
+      <button class="mo-btn" id="moBtn" onclick="nextQuestion()">Następne →</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <!-- City card -->
+    <div class="city-card">
+      <div class="city-prompt" id="g_findCity">Znajdź miasto</div>
+      <div class="city-name" id="cityName">–</div>
+      <div class="city-divider"></div>
+      <div class="city-country" id="cityCountry">–</div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-wrap">
+      <div class="prog-header">
+        <span class="prog-title" id="g_lvlScore">Wynik poziomu</span>
+        <span class="prog-score" id="progScore">0</span>
+      </div>
+      <div class="prog-bg">
+        <div class="prog-bar" id="progBar" style="width:0%"></div>
+      </div>
+      <div class="prog-thr-line"><div class="prog-thr-tick" id="thrTick" style="left:50%"></div></div>
+      <div class="prog-thr-row"><div class="prog-thr-lbl" id="thrLbl" style="left:50%">próg 50%</div></div>
+      <div class="prog-max" id="progMax">maks. 8000 pkt</div>
+    </div>
+
+    <!-- Tier info row -->
+    <div class="tier-row">
+      <div class="tier-dot" id="tierDot"></div>
+      <div class="tier-name" id="tierName">Tier 1</div>
+      <div class="tier-q" id="tierQ">pyt. 1/8</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ I18N ══════════════════════════════════════════════════════════════════
+let LANG = 'pl';
+
+const I18N = {
+  pl: {
+    tagline:'Sprawdź, czy znasz miasta świata',
+    nickLbl:'Twój nick', nickPlaceholder:'Wpisz nick...',
+    modeLbl:'Tryb gry', modeWorld:'Świat', modeWorldInfo:'Miasta całego świata',
+    modeEurope:'Europa', modeEuropeInfo:'Miasta Europy',
+    diffLbl:'Poziom trudności',
+    easy:'Łatwy', easyInfo:'Widoczne kraje.<br>Stały próg zaliczenia.',
+    medium:'Średni', mediumInfo:'Widoczne kraje.<br>Malejący próg.<br><strong>Więcej punktów!</strong>',
+    hard:'Trudny', hardInfo:'Bez krajów.<br>Malejący próg.<br>Jeszcze więcej punktów!',
+    rules:'<strong>Wskaż miasto na mapie zanim upłynie czas.</strong><br>Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.',
+    startBtn:'Rozpocznij podróż →', lbBtn:'🏆 Tablica wyników',
+    // header
+    lvlLbl:'Poziom', totalLbl:'Łącznie', qLbl:'Pytanie', secLbl:'sekund',
+    restart:'↺ Restart', logoTitle:'Menu główne',
+    // sidebar
+    findCity:'Znajdź miasto', lvlScore:'Wynik poziomu',
+    country_unknown:'kraj nieznany',
+    // overlay
+    distLbl:'Odległość', ptsLbl:'Punkty', timeoutTxt:'Czas minął!',
+    nextBtn:'Następne →', finishLvlBtn:'Zakończ poziom →',
+    timeBonusTxt:(pts)=>`⚡ +${pts} pkt za czas`,
+    // pass/fail
+    bonusDesc:'Zaliczono za pierwszym razem w tej rozgrywce!',
+    failTitle:'Nie zaliczono!',
+    retryBtn:'↺ Spróbuj ponownie',
+    resignBtn:'Zakończ i zapisz wynik',
+    menuBtn:'✕ Menu główne (bez zapisu)',
+    nextLvlBtn:'Następny poziom →',
+    finishGameBtn:'🏆 Zakończ grę',
+    // end screen
+    endPlayAgain:'Zagraj ponownie',
+    endLbBtn:'🏆 Tablica wyników',
+    top10title:'🎉 Jesteś w Top 10!',
+    shareTwitter:'Udostępnij', shareFB:'Facebook', shareCopy:'Kopiuj wynik',
+    shareCopied:'Skopiowano!',
+    // leaderboard
+    lbTitle:'🏆 Tablica wyników',
+    lbWorld:'Świat', lbEurope:'Europa',
+    lbDiff:'Poziom', lbScore:'Wynik',
+    lbClose:'← Zamknij', lbClear:'🗑 Wyczyść',
+    lbEmpty:'Brak wyników — zagraj jako pierwszy!',
+    lbConfirmClear:'Wyczyścić tę tablicę wyników?',
+    // diff labels
+    diffLabels:{easy:'Łatwy', medium:'Średni', hard:'Trudny'},
+    // tier names
+    tierNames:{1:'Łatwy',2:'Średni',3:'Trudny',4:'Ekspert'},
+    levelLabels:['Łatwy 1','Łatwy 2','Łatwy 3','Średni 1','Średni 2','Średni 3','Trudny 1','Trudny 2','Trudny 3','Ekspert 1','Ekspert 2','Ekspert 3'],
+    // end titles
+    endTitles:[
+      [140000,'🏆 Mistrz Geografii','Fenomenalny wynik! Absolutna elita.'],
+      [100000,'✈️ Geograf Ekspert','Doskonała orientacja. Nieliczni osiągają ten poziom!'],
+      [70000,'🌍 Doświadczony Odkrywca','Świetny wynik! Znasz świat lepiej niż większość.'],
+      [40000,'🗺️ Podróżnik','Dobra robota! Wciąż jest kilka kontynentów do odkrycia.'],
+      [0,'📍 Odkrywca','Ukończyłeś grę! Każda podróż zaczyna się od pierwszego kroku.'],
+    ],
+    // share text
+    shareText:(score,mode,diff)=>`🌍 Traveler Challenge
+Wynik: ${score.toLocaleString('pl')} pkt | Tryb: ${mode==='europe'?'Europa':'Świat'} | Poziom: ${diff}
+https://grgbrg.github.io/traveler-challange`,
+    // misc
+    thrLabel:(pct)=>`próg ${pct}%`,
+    maxPtsLabel:(pts)=>`maks. ${pts.toLocaleString('pl')} pkt`,
+    qLabel:(q,total)=>`pyt. ${q}/${total}`,
+    nickRequired:'Nick jest wymagany!',
+    nickPlaceholderError:'Nick jest wymagany!',
+    themeLight:'☀️ Jasny motyw', themeDark:'🌙 Ciemny motyw',
+    lvlPassDetail:(pct,thr,thrPts,total)=>`${pct}% maks. punktów  •  próg: ${thr}% (${thrPts.toLocaleString('pl')} pkt)
+Łączny wynik: ${total.toLocaleString('pl')} pkt`,
+    lvlFailDetail:(pct,thr,thrPts,diff,total)=>`${pct}% maks. punktów  •  potrzeba: ${thr}% (${thrPts.toLocaleString('pl')} pkt)
+Brakło: ${diff.toLocaleString('pl')} pkt
+Łączny wynik: ${total.toLocaleString('pl')} pkt`,
+    top10sub:(rank)=>`Miejsce #${rank+1} w tabeli najlepszych!`,
+  },
+  en: {
+    tagline:'Test your knowledge of world cities',
+    nickLbl:'Your nickname', nickPlaceholder:'Enter nickname...',
+    modeLbl:'Game mode', modeWorld:'World', modeWorldInfo:'Cities worldwide',
+    modeEurope:'Europe', modeEuropeInfo:'European cities',
+    diffLbl:'Difficulty',
+    easy:'Easy', easyInfo:'Countries shown.<br>Fixed pass threshold.',
+    medium:'Medium', mediumInfo:'Countries shown.<br>Decreasing threshold.<br><strong>More points!</strong>',
+    hard:'Hard', hardInfo:'No countries shown.<br>Decreasing threshold.<br>Even more points!',
+    rules:'<strong>Find the city on the map before time runs out.</strong><br>The <strong>closer and faster</strong> you click, the more points!<br>Earn a <strong>Bonus</strong> for passing a level on your first try.',
+    startBtn:'Start Journey →', lbBtn:'🏆 Leaderboard',
+    // header
+    lvlLbl:'Level', totalLbl:'Total', qLbl:'Question', secLbl:'seconds',
+    restart:'↺ Restart', logoTitle:'Main Menu',
+    // sidebar
+    findCity:'Find the city', lvlScore:'Level score',
+    country_unknown:'country unknown',
+    // overlay
+    distLbl:'Distance', ptsLbl:'Points', timeoutTxt:"Time's up!",
+    nextBtn:'Next →', finishLvlBtn:'Finish level →',
+    timeBonusTxt:(pts)=>`⚡ +${pts} pts time bonus`,
+    // pass/fail
+    bonusDesc:'Passed on the first try this game!',
+    failTitle:'Level failed!',
+    retryBtn:'↺ Try again',
+    resignBtn:'Finish & save score',
+    menuBtn:'✕ Main menu (no save)',
+    nextLvlBtn:'Next level →',
+    finishGameBtn:'🏆 Finish game',
+    // end screen
+    endPlayAgain:'Play again',
+    endLbBtn:'🏆 Leaderboard',
+    top10title:'🎉 You made the Top 10!',
+    shareTwitter:'Share', shareFB:'Facebook', shareCopy:'Copy score',
+    shareCopied:'Copied!',
+    // leaderboard
+    lbTitle:'🏆 Leaderboard',
+    lbWorld:'World', lbEurope:'Europe',
+    lbDiff:'Difficulty', lbScore:'Score',
+    lbClose:'← Close', lbClear:'🗑 Clear',
+    lbEmpty:'No scores yet — be the first to play!',
+    lbConfirmClear:'Clear this leaderboard?',
+    // diff labels
+    diffLabels:{easy:'Easy', medium:'Medium', hard:'Hard'},
+    // tier names
+    tierNames:{1:'Easy',2:'Medium',3:'Hard',4:'Expert'},
+    levelLabels:['Easy 1','Easy 2','Easy 3','Medium 1','Medium 2','Medium 3','Hard 1','Hard 2','Hard 3','Expert 1','Expert 2','Expert 3'],
+    // end titles
+    endTitles:[
+      [140000,'🏆 Geography Master','Phenomenal score! Absolute elite.'],
+      [100000,'✈️ Expert Geographer','Outstanding navigation. Few reach this level!'],
+      [70000,'🌍 Seasoned Explorer','Great score! You know the world better than most.'],
+      [40000,'🗺️ Traveler','Good job! There are still a few continents to discover.'],
+      [0,'📍 Explorer','You finished the game! Every journey starts with the first step.'],
+    ],
+    // share text
+    shareText:(score,mode,diff)=>`🌍 Traveler Challenge
+Score: ${score.toLocaleString('en')} pts | Mode: ${mode==='europe'?'Europe':'World'} | Difficulty: ${diff}
+https://grgbrg.github.io/traveler-challange`,
+    // misc
+    thrLabel:(pct)=>`threshold ${pct}%`,
+    maxPtsLabel:(pts)=>`max. ${pts.toLocaleString('en')} pts`,
+    qLabel:(q,total)=>`q. ${q}/${total}`,
+    nickRequired:'Nickname is required!',
+    nickPlaceholderError:'Nickname required!',
+    themeLight:'☀️ Light mode', themeDark:'🌙 Dark mode',
+    lvlPassDetail:(pct,thr,thrPts,total)=>`${pct}% of max points  •  threshold: ${thr}% (${thrPts.toLocaleString('en')} pts)
+Total score: ${total.toLocaleString('en')} pts`,
+    lvlFailDetail:(pct,thr,thrPts,diff,total)=>`${pct}% of max points  •  needed: ${thr}% (${thrPts.toLocaleString('en')} pts)
+Missed by: ${diff.toLocaleString('en')} pts
+Total score: ${total.toLocaleString('en')} pts`,
+    top10sub:(rank)=>`Ranked #${rank+1} on the leaderboard!`,
+  }
+};
+
+function t(key){ return I18N[LANG][key]; }
+
+function setLang(lang){
+  LANG = lang;
+  document.documentElement.setAttribute('data-lang', lang);
+  document.getElementById('langBtnPL').classList.toggle('active', lang==='pl');
+  document.getElementById('langBtnEN').classList.toggle('active', lang==='en');
+  applyI18n();
+}
+
+function applyI18n(){
+  const L = I18N[LANG];
+  const s = (id, val) => { const el=document.getElementById(id); if(el) el.innerHTML=val; };
+  const st = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  // start screen
+  s('s_tagline', L.tagline);
+  st('s_nickLbl', L.nickLbl);
+  document.getElementById('nickInput').placeholder = L.nickPlaceholder;
+  st('s_modeLbl', L.modeLbl);
+  st('s_modeWorld', L.modeWorld);
+  st('s_modeWorldInfo', L.modeWorldInfo);
+  st('s_modeEurope', L.modeEurope);
+  st('s_modeEuropeInfo', L.modeEuropeInfo);
+  st('s_diffLbl', L.diffLbl);
+  st('s_easy', L.easy); s('s_easyInfo', L.easyInfo);
+  st('s_medium', L.medium); s('s_mediumInfo', L.mediumInfo);
+  st('s_hard', L.hard); s('s_hardInfo', L.hardInfo);
+  s('s_rules', L.rules);
+  st('s_startBtn', L.startBtn);
+  st('s_lbBtn', L.lbBtn);
+  // header
+  st('h_lvlLbl', L.lvlLbl);
+  st('h_totalLbl', L.totalLbl);
+  st('h_qLbl', L.qLbl);
+  st('h_secLbl', L.secLbl);
+  st('h_restart', L.restart);
+  const logo = document.querySelector('.logo');
+  if(logo) logo.title = L.logoTitle;
+  // sidebar
+  st('g_findCity', L.findCity);
+  st('g_lvlScore', L.lvlScore);
+  // overlay
+  st('mo_distLbl', L.distLbl);
+  st('mo_ptsLbl', L.ptsLbl);
+  st('mo_timeout', L.timeoutTxt);
+  // leaderboard
+  st('lb_title', L.lbTitle);
+  st('lb_world', L.lbWorld);
+  st('lb_europe', L.lbEurope);
+  st('lb_diff', L.lbDiff);
+  st('lb_score', L.lbScore);
+  st('lb_close', L.lbClose);
+  st('lb_clear', L.lbClear);
+  // end screen
+  st('e_playAgain', L.endPlayAgain);
+  st('e_lbBtn', L.endLbBtn);
+  st('e_top10title', L.top10title);
+  st('e_shareTwitter', L.shareTwitter);
+  st('e_shareFB', L.shareFB);
+  st('e_shareCopy', L.shareCopy);
+  // fail screen
+  st('fail_title', L.failTitle);
+  st('fail_retry', L.retryBtn);
+  st('fail_resign', L.resignBtn);
+  st('fail_menu', L.menuBtn);
+  // bonus
+  st('bonus_desc', L.bonusDesc);
+  // theme
+  const dark_now = document.documentElement.getAttribute('data-theme')==='dark';
+  const tb = document.getElementById('themeBtn');
+  const tbh = document.getElementById('themeBtnHdr');
+  if(tb) tb.textContent = dark_now ? L.themeLight : L.themeDark;
+  if(tbh) tbh.textContent = dark_now ? '☀️' : '🌙';
+  // re-render lb if open
+  if(!document.getElementById('lbScreen').classList.contains('hidden')) renderLB();
+}
+
+// ══ SHARE ═════════════════════════════════════════════════════════════════
+function buildShareText(){
+  const L = I18N[LANG];
+  return L.shareText(G.totalScore, G.mode, L.diffLabels[G.diff]||G.diff);
+}
+function shareTwitter(){
+  const text = encodeURIComponent(buildShareText());
+  window.open('https://twitter.com/intent/tweet?text='+text, '_blank');
+}
+function shareFacebook(){
+  window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent('https://grgbrg.github.io/traveler-challange')+'&quote='+encodeURIComponent(buildShareText()), '_blank');
+}
+function shareClipboard(){
+  const btn = document.querySelector('.share-copy span');
+  navigator.clipboard.writeText(buildShareText()).then(()=>{
+    const orig = btn.textContent;
+    btn.textContent = I18N[LANG].shareCopied;
+    setTimeout(()=>{ btn.textContent = orig; }, 2000);
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = buildShareText();
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    const orig = btn.textContent;
+    btn.textContent = I18N[LANG].shareCopied;
+    setTimeout(()=>{ btn.textContent = orig; }, 2000);
+  });
+}
+
+// ══ DIFFICULTY ════════════════════════════════════════════════════════════
+const DIFF={
+  easy:  {cls:'diff-easy', mult:1,   showCountry:true,  timerSec:15, timeBonusPts:10, thresholds:[50,50,50,50,50,50,50,50,50,50,50,50]},
+  medium:{cls:'diff-med',  mult:1.5, showCountry:true,  timerSec:10, timeBonusPts:10, thresholds:[70,68,66,64,62,60,58,56,54,52,51,50]},
+  hard:  {cls:'diff-hard', mult:2,   showCountry:false, timerSec:8,  timeBonusPts:10, thresholds:[70,68,66,64,62,60,58,56,54,52,51,50]},
+};
+const LEVELS=[
+  {tier:1},{tier:1},{tier:1},
+  {tier:2},{tier:2},{tier:2},
+  {tier:3},{tier:3},{tier:3},
+  {tier:4},{tier:4},{tier:4},
+];
+const TIER_COLORS={1:'#4caf7d',2:'#f0c040',3:'#e05252',4:'#8b5cf6'};
+const Q_PER_LVL=8, BASE_MAX=1000, NO_REPEAT_BONUS=1500;
+
+// ══ CITY DATABASE ═════════════════════════════════════════════════════════
+const T1=[
+  {n:"Warszawa",       c:"Polska",            la:52.23, lo:21.01  },
+  {n:"Paryż",          c:"Francja",           la:48.85, lo:2.35   },
+  {n:"Londyn",         c:"Wielka Brytania",   la:51.51, lo:-0.12  },
+  {n:"Berlin",         c:"Niemcy",            la:52.52, lo:13.40  },
+  {n:"Madryt",         c:"Hiszpania",         la:40.42, lo:-3.70  },
+  {n:"Rzym",           c:"Włochy",            la:41.90, lo:12.50  },
+  {n:"Ateny",          c:"Grecja",            la:37.98, lo:23.73  },
+  {n:"Amsterdam",      c:"Holandia",          la:52.37, lo:4.90   },
+  {n:"Lizbona",        c:"Portugalia",        la:38.72, lo:-9.14  },
+  {n:"Sztokholm",      c:"Szwecja",           la:59.33, lo:18.07  },
+  {n:"Oslo",           c:"Norwegia",          la:59.91, lo:10.75  },
+  {n:"Kopenhaga",      c:"Dania",             la:55.68, lo:12.57  },
+  {n:"Wiedeń",         c:"Austria",           la:48.21, lo:16.37  },
+  {n:"Bruksela",       c:"Belgia",            la:50.85, lo:4.35   },
+  {n:"Kijów",          c:"Ukraina",           la:50.45, lo:30.52  },
+  {n:"Moskwa",         c:"Rosja",             la:55.75, lo:37.62  },
+  {n:"Waszyngton",     c:"USA",               la:38.91, lo:-77.04 },
+  {n:"Nowy Jork",      c:"USA",               la:40.71, lo:-74.00 },
+  {n:"Los Angeles",    c:"USA",               la:34.05, lo:-118.24},
+  {n:"Toronto",        c:"Kanada",            la:43.65, lo:-79.38 },
+  {n:"Meksyk",         c:"Meksyk",            la:19.43, lo:-99.13 },
+  {n:"Buenos Aires",   c:"Argentyna",         la:-34.61,lo:-58.38 },
+  {n:"Rio de Janeiro", c:"Brazylia",          la:-22.91,lo:-43.17 },
+  {n:"Brasília",       c:"Brazylia",          la:-15.78,lo:-47.93 },
+  {n:"Lima",           c:"Peru",              la:-12.05,lo:-77.04 },
+  {n:"Stambuł",        c:"Turcja",            la:41.01, lo:28.95  },
+  {n:"Ankara",         c:"Turcja",            la:39.93, lo:32.86  },
+  {n:"Pekin",          c:"Chiny",             la:39.91, lo:116.39 },
+  {n:"Szanghaj",       c:"Chiny",             la:31.23, lo:121.47 },
+  {n:"Tokio",          c:"Japonia",           la:35.68, lo:139.69 },
+  {n:"Seul",           c:"Korea Płd.",        la:37.57, lo:126.98 },
+  {n:"Dubaj",          c:"ZEA",               la:25.20, lo:55.27  },
+  {n:"Teheran",        c:"Iran",              la:35.69, lo:51.42  },
+  {n:"Bagdad",         c:"Irak",              la:33.34, lo:44.40  },
+  {n:"Rijad",          c:"Arabia Saudyjska",  la:24.69, lo:46.72  },
+  {n:"Mumbai",         c:"Indie",             la:19.08, lo:72.88  },
+  {n:"Islamabad",      c:"Pakistan",          la:33.72, lo:73.06  },
+  {n:"Dhaka",          c:"Bangladesz",        la:23.81, lo:90.41  },
+  {n:"Bangkok",        c:"Tajlandia",         la:13.75, lo:100.52 },
+  {n:"Kuala Lumpur",   c:"Malezja",           la:3.14,  lo:101.69 },
+  {n:"Manila",         c:"Filipiny",          la:14.60, lo:120.98 },
+  {n:"Hanoi",          c:"Wietnam",           la:21.03, lo:105.85 },
+  {n:"Singapur",       c:"Singapur",          la:1.35,  lo:103.82 },
+  {n:"Jakarta",        c:"Indonezja",         la:-6.21, lo:106.85 },
+  {n:"Kair",           c:"Egipt",             la:30.06, lo:31.25  },
+  {n:"Lagos",          c:"Nigeria",           la:6.52,  lo:3.38   },
+  {n:"Nairobi",        c:"Kenia",             la:-1.29, lo:36.82  },
+  {n:"Pretoria",       c:"RPA",               la:-25.75,lo:28.19  },
+  {n:"Kapsztad",       c:"RPA",               la:-33.93,lo:18.42  },
+  {n:"Sydney",         c:"Australia",         la:-33.87,lo:151.21 },
+  // Morze Śródziemne — T1
+  {n:"Barcelona",      c:"Hiszpania",         la:41.39, lo:2.15   },
+  {n:"Walencja",       c:"Hiszpania",         la:39.47, lo:-0.38  },
+  {n:"Marsylia",       c:"Francja",           la:43.30, lo:5.37   },
+  {n:"Mediolan",       c:"Włochy",            la:45.46, lo:9.19   },
+  {n:"Neapol",         c:"Włochy",            la:40.85, lo:14.27  },
+  {n:"Aleksandria",    c:"Egipt",             la:31.20, lo:29.92  },
+  {n:"Tel Awiw",       c:"Izrael",            la:32.09, lo:34.79  },
+  {n:"Bejrut",         c:"Liban",             la:33.89, lo:35.50  },
+  {n:"Tunis",          c:"Tunezja",           la:36.82, lo:10.17  },
+  {n:"Casablanca",     c:"Maroko",            la:33.59, lo:-7.62  },
+];
+const T2=[
+  {n:"Reykjavik",      c:"Islandia",          la:64.14, lo:-21.94 },
+  {n:"Wilno",          c:"Litwa",             la:54.69, lo:25.28  },
+  {n:"Ryga",           c:"Łotwa",             la:56.95, lo:24.11  },
+  {n:"Tallin",         c:"Estonia",           la:59.44, lo:24.75  },
+  {n:"Bratysława",     c:"Słowacja",          la:48.15, lo:17.11  },
+  {n:"Lublana",        c:"Słowenia",          la:46.05, lo:14.51  },
+  {n:"Sarajewo",       c:"Bośnia i Herc.",    la:43.85, lo:18.39  },
+  {n:"Tirana",         c:"Albania",           la:41.33, lo:19.83  },
+  {n:"Skopje",         c:"Macedonia Płn.",    la:42.00, lo:21.43  },
+  {n:"Kiszyniów",      c:"Mołdawia",          la:47.01, lo:28.86  },
+  {n:"Helsinki",       c:"Finlandia",         la:60.17, lo:24.94  },
+  {n:"Zagrzeb",        c:"Chorwacja",         la:45.81, lo:15.98  },
+  {n:"Bukareszt",      c:"Rumunia",           la:44.43, lo:26.10  },
+  {n:"Sofia",          c:"Bułgaria",          la:42.70, lo:23.32  },
+  {n:"Belgrad",        c:"Serbia",            la:44.80, lo:20.46  },
+  {n:"Praga",          c:"Czechy",            la:50.08, lo:14.44  },
+  {n:"Budapeszt",      c:"Węgry",             la:47.50, lo:19.04  },
+  {n:"Tbilisi",        c:"Gruzja",            la:41.69, lo:44.83  },
+  {n:"Jerevan",        c:"Armenia",           la:40.18, lo:44.51  },
+  {n:"Baku",           c:"Azerbejdżan",       la:40.41, lo:49.87  },
+  {n:"Astana",         c:"Kazachstan",        la:51.18, lo:71.45  },
+  {n:"Duszanbe",       c:"Tadżykistan",       la:38.56, lo:68.77  },
+  {n:"Ułan Bator",     c:"Mongolia",          la:47.91, lo:106.88 },
+  {n:"Phnom Penh",     c:"Kambodża",          la:11.57, lo:104.92 },
+  {n:"Naypyidaw",      c:"Myanmar",           la:19.74, lo:96.13  },
+  {n:"Kolombo",        c:"Sri Lanka",         la:6.93,  lo:79.85  },
+  {n:"Addis Abeba",    c:"Etiopia",           la:9.03,  lo:38.74  },
+  {n:"Lusaka",         c:"Zambia",            la:-15.42,lo:28.28  },
+  {n:"Niamey",         c:"Niger",             la:13.51, lo:2.11   },
+  {n:"Ouagadougou",    c:"Burkina Faso",      la:12.37, lo:-1.53  },
+  {n:"Libreville",     c:"Gabon",             la:0.39,  lo:9.45   },
+  {n:"Bamako",         c:"Mali",              la:12.65, lo:-8.00  },
+  {n:"Dakar",          c:"Senegal",           la:14.72, lo:-17.47 },
+  {n:"Akra",           c:"Ghana",             la:5.55,  lo:-0.20  },
+  {n:"Asunción",       c:"Paragwaj",          la:-25.29,lo:-57.65 },
+  {n:"Paramaribo",     c:"Surinam",           la:5.85,  lo:-55.20 },
+  {n:"Quito",          c:"Ekwador",           la:-0.22, lo:-78.51 },
+  {n:"La Paz",         c:"Boliwia",           la:-16.50,lo:-68.15 },
+  {n:"Hamburg",        c:"Niemcy",            la:53.55, lo:10.00  },
+  {n:"Chicago",        c:"USA",               la:41.88, lo:-87.63 },
+  {n:"Miami",          c:"USA",               la:25.77, lo:-80.19 },
+  {n:"Vancouver",      c:"Kanada",            la:49.25, lo:-123.12},
+  {n:"Guadalajara",    c:"Meksyk",            la:20.66, lo:-103.35},
+  {n:"Monterrey",      c:"Meksyk",            la:25.69, lo:-100.31},
+  {n:"Medellín",       c:"Kolumbia",          la:6.25,  lo:-75.56 },
+  {n:"Recife",         c:"Brazylia",          la:-8.05, lo:-34.88 },
+  {n:"Porto Alegre",   c:"Brazylia",          la:-30.03,lo:-51.23 },
+  {n:"Osaka",          c:"Japonia",           la:34.69, lo:135.50 },
+  {n:"Szenzhen",       c:"Chiny",             la:22.54, lo:114.06 },
+  {n:"Chengdu",        c:"Chiny",             la:30.57, lo:104.07 },
+  {n:"Wuhan",          c:"Chiny",             la:30.59, lo:114.31 },
+  {n:"Bangalore",      c:"Indie",             la:12.97, lo:77.59  },
+  {n:"Melbourne",      c:"Australia",         la:-37.81,lo:144.96 },
+  // Śródziemne — T2
+  {n:"Sewilla",        c:"Hiszpania",         la:37.39, lo:-5.99  },
+  {n:"Malaga",         c:"Hiszpania",         la:36.72, lo:-4.42  },
+  {n:"Palma de Mallorca",c:"Hiszpania",       la:39.57, lo:2.65   },
+  {n:"Lyon",           c:"Francja",           la:45.75, lo:4.85   },
+  {n:"Nicea",          c:"Francja",           la:43.71, lo:7.26   },
+  {n:"Turyn",          c:"Włochy",            la:45.07, lo:7.69   },
+  {n:"Palermo",        c:"Włochy",            la:38.11, lo:13.36  },
+  {n:"Florencja",      c:"Włochy",            la:43.77, lo:11.25  },
+  {n:"Wenecja",        c:"Włochy",            la:45.44, lo:12.33  },
+  {n:"Bolonia",        c:"Włochy",            la:44.50, lo:11.34  },
+  {n:"Izmir",          c:"Turcja",            la:38.41, lo:27.14  },
+  {n:"Antalya",        c:"Turcja",            la:36.90, lo:30.71  },
+  {n:"Jerozolima",     c:"Izrael",            la:31.77, lo:35.22  },
+  {n:"Damaszek",       c:"Syria",             la:33.51, lo:36.29  },
+  {n:"Amman",          c:"Jordania",          la:31.96, lo:35.95  },
+  {n:"Trypolis",       c:"Libia",             la:32.90, lo:13.18  },
+  {n:"Algier",         c:"Algieria",          la:36.74, lo:3.06   },
+  {n:"Oran",           c:"Algieria",          la:35.70, lo:-0.63  },
+  {n:"Rabat",          c:"Maroko",            la:34.02, lo:-6.83  },
+  {n:"Fez",            c:"Maroko",            la:34.03, lo:-5.00  },
+  {n:"Tanger",         c:"Maroko",            la:35.78, lo:-5.80  },
+  {n:"Valletta",       c:"Malta",             la:35.90, lo:14.51  },
+  {n:"Nikozja",        c:"Cypr",              la:35.17, lo:33.37  },
+  {n:"Saloniki",       c:"Grecja",            la:40.64, lo:22.94  },
+  {n:"Heraklion",      c:"Grecja",            la:35.34, lo:25.13  },
+  {n:"Dubrownik",      c:"Chorwacja",         la:42.65, lo:18.09  },
+  {n:"Split",          c:"Chorwacja",         la:43.51, lo:16.44  },
+  {n:"Genua",          c:"Włochy",            la:44.41, lo:8.93   },
+  {n:"Montpellier",    c:"Francja",           la:43.61, lo:3.88   },
+];
+const T3=[
+  {n:"Honiara",             c:"Wyspy Salomona",           la:-9.43, lo:160.05 },
+  {n:"Port Moresby",        c:"Papua Nowa Gwinea",        la:-9.44, lo:147.18 },
+  {n:"Funafuti",            c:"Tuvalu",                   la:-8.52, lo:179.20 },
+  {n:"Yaren",               c:"Nauru",                    la:-0.55, lo:166.92 },
+  {n:"Palikir",             c:"Mikronezja",               la:6.92,  lo:158.16 },
+  {n:"Majuro",              c:"Wyspy Marshalla",          la:7.09,  lo:171.38 },
+  {n:"Ngerulmud",           c:"Palau",                    la:7.50,  lo:134.62 },
+  {n:"Apia",                c:"Samoa",                    la:-13.83,lo:-171.77},
+  {n:"Port Vila",           c:"Vanuatu",                  la:-17.73,lo:168.32 },
+  {n:"Suva",                c:"Fidżi",                    la:-18.14,lo:178.44 },
+  {n:"Nuku'alofa",          c:"Tonga",                    la:-21.14,lo:-175.22},
+  {n:"Bandar Seri Begawan", c:"Brunei",                   la:4.94,  lo:114.95 },
+  {n:"Biszek",              c:"Kirgistan",                la:42.87, lo:74.59  },
+  {n:"Aszchabad",           c:"Turkmenistan",             la:37.95, lo:58.38  },
+  {n:"Taszkent",            c:"Uzbekistan",               la:41.30, lo:69.24  },
+  {n:"Dili",                c:"Timor Wschodni",           la:-8.56, lo:125.58 },
+  {n:"Maseru",              c:"Lesotho",                  la:-29.32,lo:27.48  },
+  {n:"Mbabane",             c:"Eswatini",                 la:-26.32,lo:31.13  },
+  {n:"Gaborone",            c:"Botswana",                 la:-24.65,lo:25.91  },
+  {n:"Windhoek",            c:"Namibia",                  la:-22.56,lo:17.08  },
+  {n:"Gitega",              c:"Burundi",                  la:-3.43, lo:29.93  },
+  {n:"Antananarywa",        c:"Madagaskar",               la:-18.91,lo:47.54  },
+  {n:"Dżibuti",             c:"Dżibuti",                  la:11.59, lo:43.15  },
+  {n:"Malabo",              c:"Gwinea Równikowa",         la:3.75,  lo:8.78   },
+  {n:"Sao Tome",            c:"Wyspy Św. Tomasza",        la:0.34,  lo:6.73   },
+  {n:"Praia",               c:"Wyspy Zielonego Przylądka",la:14.93, lo:-23.51 },
+  {n:"Bissau",              c:"Gwinea Bissau",            la:11.86, lo:-15.60 },
+  {n:"Banjul",              c:"Gambia",                   la:13.45, lo:-16.58 },
+  {n:"Monrovia",            c:"Liberia",                  la:6.30,  lo:-10.80 },
+  {n:"Yamoussoukro",        c:"Wybrzeże Kości Słoniowej", la:6.82,  lo:-5.27  },
+  {n:"Vaduz",               c:"Liechtenstein",            la:47.14, lo:9.52   },
+  {n:"San Marino",          c:"San Marino",               la:43.94, lo:12.45  },
+  {n:"Andora la Vella",     c:"Andora",                   la:42.51, lo:1.52   },
+  {n:"Podgorica",           c:"Czarnogóra",               la:42.44, lo:19.26  },
+  {n:"Prisztina",           c:"Kosowo",                   la:42.67, lo:21.17  },
+  {n:"Kraków",              c:"Polska",                   la:50.06, lo:19.94  },
+  {n:"Wrocław",             c:"Polska",                   la:51.11, lo:17.04  },
+  {n:"Gdańsk",              c:"Polska",                   la:54.35, lo:18.65  },
+  {n:"Poznań",              c:"Polska",                   la:52.41, lo:16.93  },
+  {n:"Łódź",                c:"Polska",                   la:51.77, lo:19.46  },
+  {n:"Kharkiw",             c:"Ukraina",                  la:49.99, lo:36.23  },
+  {n:"Dnipro",              c:"Ukraina",                  la:48.46, lo:35.04  },
+  {n:"Lwów",                c:"Ukraina",                  la:49.84, lo:24.03  },
+  {n:"Odessa",              c:"Ukraina",                  la:46.48, lo:30.72  },
+  {n:"Monachium",           c:"Niemcy",                   la:48.14, lo:11.58  },
+  {n:"Kolonia",             c:"Niemcy",                   la:50.94, lo:6.96   },
+  {n:"Frankfurt",           c:"Niemcy",                   la:50.11, lo:8.68   },
+  {n:"Stuttgart",           c:"Niemcy",                   la:48.78, lo:9.18   },
+  {n:"Manchester",          c:"Wielka Brytania",          la:53.48, lo:-2.24  },
+  {n:"Birmingham",          c:"Wielka Brytania",          la:52.49, lo:-1.90  },
+  {n:"Glasgow",             c:"Wielka Brytania",          la:55.86, lo:-4.25  },
+  {n:"Edynburg",            c:"Wielka Brytania",          la:55.95, lo:-3.19  },
+  {n:"Tuluza",              c:"Francja",                  la:43.60, lo:1.44   },
+  {n:"Bordeaux",            c:"Francja",                  la:44.84, lo:-0.58  },
+  {n:"Strasburg",           c:"Francja",                  la:48.57, lo:7.75   },
+  {n:"Lille",               c:"Francja",                  la:50.63, lo:3.07   },
+  {n:"Bilbao",              c:"Hiszpania",                la:43.26, lo:-2.93  },
+  {n:"Saragossa",           c:"Hiszpania",                la:41.65, lo:-0.88  },
+  {n:"Porto",               c:"Portugalia",               la:41.15, lo:-8.61  },
+  {n:"Rotterdam",           c:"Holandia",                 la:51.92, lo:4.48   },
+  {n:"Antwerpia",           c:"Belgia",                   la:51.22, lo:4.40   },
+  {n:"Göteborg",            c:"Szwecja",                  la:57.71, lo:11.97  },
+  {n:"Bergen",              c:"Norwegia",                 la:60.39, lo:5.32   },
+  {n:"Graz",                c:"Austria",                  la:47.07, lo:15.44  },
+  {n:"Brno",                c:"Czechy",                   la:49.20, lo:16.61  },
+  {n:"Houston",             c:"USA",                      la:29.76, lo:-95.37 },
+  {n:"Phoenix",             c:"USA",                      la:33.45, lo:-112.07},
+  {n:"Philadelphia",        c:"USA",                      la:39.95, lo:-75.16 },
+  {n:"San Antonio",         c:"USA",                      la:29.42, lo:-98.49 },
+  {n:"San Diego",           c:"USA",                      la:32.72, lo:-117.16},
+  {n:"Dallas",              c:"USA",                      la:32.78, lo:-96.80 },
+  {n:"San Francisco",       c:"USA",                      la:37.77, lo:-122.42},
+  {n:"Seattle",             c:"USA",                      la:47.61, lo:-122.33},
+  {n:"Denver",              c:"USA",                      la:39.74, lo:-104.98},
+  {n:"Boston",              c:"USA",                      la:42.36, lo:-71.06 },
+  {n:"Nashville",           c:"USA",                      la:36.17, lo:-86.78 },
+  {n:"Atlanta",             c:"USA",                      la:33.75, lo:-84.39 },
+  {n:"Las Vegas",           c:"USA",                      la:36.17, lo:-115.14},
+  {n:"New Orleans",         c:"USA",                      la:29.95, lo:-90.07 },
+  {n:"Detroit",             c:"USA",                      la:42.33, lo:-83.05 },
+  {n:"Minneapolis",         c:"USA",                      la:44.98, lo:-93.27 },
+  // Śródziemne — T3
+  {n:"Aleppo",              c:"Syria",                    la:36.20, lo:37.16  },
+  {n:"Latakja",             c:"Syria",                    la:35.52, lo:35.79  },
+  {n:"Akaba",               c:"Jordania",                 la:29.53, lo:35.01  },
+  {n:"Syrakuzy",            c:"Włochy",                   la:37.08, lo:15.29  },
+  {n:"Katania",             c:"Włochy",                   la:37.50, lo:15.09  },
+  {n:"Bari",                c:"Włochy",                   la:41.12, lo:16.87  },
+  {n:"Benghazi",            c:"Libia",                    la:32.12, lo:20.07  },
+  {n:"Sousse",              c:"Tunezja",                  la:35.83, lo:10.64  },
+  {n:"Sfax",                c:"Tunezja",                  la:34.74, lo:10.76  },
+  {n:"Chittagong",          c:"Bangladesz",               la:22.36, lo:91.78  },
+  {n:"Pune",                c:"Indie",                    la:18.52, lo:73.86  },
+  {n:"Ahmedabad",           c:"Indie",                    la:23.03, lo:72.59  },
+  {n:"Shenyang",            c:"Chiny",                    la:41.80, lo:123.43 },
+  {n:"Harbin",              c:"Chiny",                    la:45.80, lo:126.53 },
+  {n:"Kano",                c:"Nigeria",                  la:12.00, lo:8.52   },
+  {n:"Mombasa",             c:"Kenia",                    la:-4.05, lo:39.67  },
+  {n:"Belo Horizonte",      c:"Brazylia",                 la:-19.92,lo:-43.94 },
+  {n:"Valparaíso",          c:"Chile",                    la:-33.05,lo:-71.62 },
+  {n:"Córdoba",             c:"Argentyna",                la:-31.42,lo:-64.18 },
+];
+const T4=[...T1,...T2,...T3];
+
+// ══ EUROPE MODE ══════════════════════════════════════
+const EU_T1=[
+  {n:"Warszawa",c:"Polska",la:52.23,lo:21.01},
+  {n:"Berlin",c:"Niemcy",la:52.52,lo:13.4},
+  {n:"Paryż",c:"Francja",la:48.85,lo:2.35},
+  {n:"Rzym",c:"Włochy",la:41.9,lo:12.5},
+  {n:"Madryt",c:"Hiszpania",la:40.42,lo:-3.7},
+  {n:"Wiedeń",c:"Austria",la:48.21,lo:16.37},
+  {n:"Bruksela",c:"Belgia",la:50.85,lo:4.35},
+  {n:"Amsterdam",c:"Holandia",la:52.37,lo:4.9},
+  {n:"Lizbona",c:"Portugalia",la:38.72,lo:-9.14},
+  {n:"Berno",c:"Szwajcaria",la:46.95,lo:7.45},
+  {n:"Luksemburg",c:"Luksemburg",la:49.61,lo:6.13},
+  {n:"Dublin",c:"Irlandia",la:53.33,lo:-6.25},
+  {n:"Kopenhaga",c:"Dania",la:55.68,lo:12.57},
+  {n:"Sztokholm",c:"Szwecja",la:59.33,lo:18.07},
+  {n:"Oslo",c:"Norwegia",la:59.91,lo:10.75},
+  {n:"Helsinki",c:"Finlandia",la:60.17,lo:24.94},
+  {n:"Reykjavik",c:"Islandia",la:64.14,lo:-21.94},
+  {n:"Praga",c:"Czechy",la:50.08,lo:14.44},
+  {n:"Bratysława",c:"Słowacja",la:48.15,lo:17.11},
+  {n:"Budapeszt",c:"Węgry",la:47.5,lo:19.04},
+  {n:"Zagrzeb",c:"Chorwacja",la:45.81,lo:15.98},
+  {n:"Lublana",c:"Słowenia",la:46.05,lo:14.51},
+  {n:"Sarajewo",c:"Bośnia i Herc.",la:43.85,lo:18.39},
+  {n:"Belgrad",c:"Serbia",la:44.8,lo:20.46},
+  {n:"Podgorica",c:"Czarnogóra",la:42.44,lo:19.26},
+  {n:"Skopje",c:"Macedonia Płn.",la:42.0,lo:21.43},
+  {n:"Tirana",c:"Albania",la:41.33,lo:19.83},
+  {n:"Ateny",c:"Grecja",la:37.98,lo:23.73},
+  {n:"Sofia",c:"Bułgaria",la:42.7,lo:23.32},
+  {n:"Bukareszt",c:"Rumunia",la:44.43,lo:26.1},
+  {n:"Londyn",c:"Wielka Brytania",la:51.51,lo:-0.12},
+  {n:"Monachium",c:"Niemcy",la:48.14,lo:11.58},
+  {n:"Hamburg",c:"Niemcy",la:53.55,lo:10.0},
+  {n:"Barcelona",c:"Hiszpania",la:41.39,lo:2.15},
+  {n:"Mediolan",c:"Włochy",la:45.46,lo:9.19},
+  {n:"Lyon",c:"Francja",la:45.75,lo:4.85},
+  {n:"Zurych",c:"Szwajcaria",la:47.38,lo:8.54},
+  {n:"Kraków",c:"Polska",la:50.06,lo:19.94},
+  {n:"Saloniki",c:"Grecja",la:40.64,lo:22.94},
+  {n:"Kluż-Napoka",c:"Rumunia",la:46.77,lo:23.59},
+];
+const EU_T2=[
+  {n:"Frankfurt",c:"Niemcy",la:50.11,lo:8.68},
+  {n:"Kolonia",c:"Niemcy",la:50.94,lo:6.96},
+  {n:"Stuttgart",c:"Niemcy",la:48.78,lo:9.18},
+  {n:"Düsseldorf",c:"Niemcy",la:51.22,lo:6.78},
+  {n:"Drezno",c:"Niemcy",la:51.05,lo:13.74},
+  {n:"Norymberga",c:"Niemcy",la:49.45,lo:11.08},
+  {n:"Marsylia",c:"Francja",la:43.3,lo:5.37},
+  {n:"Tuluza",c:"Francja",la:43.6,lo:1.44},
+  {n:"Bordeaux",c:"Francja",la:44.84,lo:-0.58},
+  {n:"Nicea",c:"Francja",la:43.7,lo:7.27},
+  {n:"Lille",c:"Francja",la:50.63,lo:3.07},
+  {n:"Nantes",c:"Francja",la:47.22,lo:-1.55},
+  {n:"Strasburg",c:"Francja",la:48.58,lo:7.75},
+  {n:"Montpellier",c:"Francja",la:43.61,lo:3.88},
+  {n:"Neapol",c:"Włochy",la:40.85,lo:14.27},
+  {n:"Turyn",c:"Włochy",la:45.07,lo:7.69},
+  {n:"Palermo",c:"Włochy",la:38.12,lo:13.36},
+  {n:"Florencja",c:"Włochy",la:43.77,lo:11.25},
+  {n:"Wenecja",c:"Włochy",la:45.44,lo:12.33},
+  {n:"Bolonia",c:"Włochy",la:44.5,lo:11.34},
+  {n:"Genua",c:"Włochy",la:44.41,lo:8.93},
+  {n:"Bari",c:"Włochy",la:41.12,lo:16.87},
+  {n:"Sewilla",c:"Hiszpania",la:37.39,lo:-5.99},
+  {n:"Walencja",c:"Hiszpania",la:39.47,lo:-0.38},
+  {n:"Bilbao",c:"Hiszpania",la:43.26,lo:-2.93},
+  {n:"Malaga",c:"Hiszpania",la:36.72,lo:-4.42},
+  {n:"Saragossa",c:"Hiszpania",la:41.65,lo:-0.88},
+  {n:"Grenada",c:"Hiszpania",la:37.18,lo:-3.6},
+  {n:"Wrocław",c:"Polska",la:51.11,lo:17.04},
+  {n:"Łódź",c:"Polska",la:51.77,lo:19.46},
+  {n:"Poznań",c:"Polska",la:52.41,lo:16.93},
+  {n:"Gdańsk",c:"Polska",la:54.35,lo:18.65},
+  {n:"Katowice",c:"Polska",la:50.26,lo:19.02},
+  {n:"Szczecin",c:"Polska",la:53.43,lo:14.55},
+  {n:"Brno",c:"Czechy",la:49.2,lo:16.61},
+  {n:"Koszyce",c:"Słowacja",la:48.72,lo:21.26},
+  {n:"Debreczyn",c:"Węgry",la:47.53,lo:21.63},
+  {n:"Genewa",c:"Szwajcaria",la:46.2,lo:6.15},
+  {n:"Bazylea",c:"Szwajcaria",la:47.56,lo:7.59},
+  {n:"Graz",c:"Austria",la:47.07,lo:15.44},
+  {n:"Salzburg",c:"Austria",la:47.8,lo:13.04},
+  {n:"Innsbruck",c:"Austria",la:47.27,lo:11.39},
+  {n:"Split",c:"Chorwacja",la:43.51,lo:16.44},
+  {n:"Dubrownik",c:"Chorwacja",la:42.65,lo:18.09},
+  {n:"Nowy Sad",c:"Serbia",la:45.25,lo:19.83},
+  {n:"Płowdiw",c:"Bułgaria",la:42.14,lo:24.75},
+  {n:"Warna",c:"Bułgaria",la:43.21,lo:27.91},
+  {n:"Timișoara",c:"Rumunia",la:45.75,lo:21.23},
+  {n:"Maribor",c:"Słowenia",la:46.56,lo:15.65},
+  {n:"Banja Luka",c:"Bośnia i Herc.",la:44.77,lo:17.19},
+  {n:"Manchester",c:"Wielka Brytania",la:53.48,lo:-2.24},
+  {n:"Birmingham",c:"Wielka Brytania",la:52.48,lo:-1.9},
+  {n:"Glasgow",c:"Wielka Brytania",la:55.86,lo:-4.25},
+  {n:"Porto",c:"Portugalia",la:41.15,lo:-8.61},
+  {n:"Göteborg",c:"Szwecja",la:57.71,lo:11.97},
+  {n:"Bergen",c:"Norwegia",la:60.39,lo:5.32},
+  {n:"Aarhus",c:"Dania",la:56.16,lo:10.21},
+  {n:"Tampere",c:"Finlandia",la:61.5,lo:23.77},
+  {n:"Rotterdam",c:"Holandia",la:51.92,lo:4.48},
+  {n:"Antwerpia",c:"Belgia",la:51.22,lo:4.4},
+];
+const EU_T3=[
+  {n:"Rothenburg ob der Tauber",c:"Niemcy",la:49.38,lo:10.18},
+  {n:"Bamberg",c:"Niemcy",la:49.9,lo:10.9},
+  {n:"Heidelberg",c:"Niemcy",la:49.4,lo:8.69},
+  {n:"Regensburg",c:"Niemcy",la:49.02,lo:12.1},
+  {n:"Weimar",c:"Niemcy",la:50.98,lo:11.33},
+  {n:"Lübeck",c:"Niemcy",la:53.87,lo:10.69},
+  {n:"Trier",c:"Niemcy",la:49.75,lo:6.64},
+  {n:"Carcassonne",c:"Francja",la:43.21,lo:2.35},
+  {n:"Colmar",c:"Francja",la:48.08,lo:7.36},
+  {n:"Avignon",c:"Francja",la:43.95,lo:4.81},
+  {n:"Annecy",c:"Francja",la:45.9,lo:6.12},
+  {n:"Nîmes",c:"Francja",la:43.84,lo:4.36},
+  {n:"Mont-Saint-Michel",c:"Francja",la:48.64,lo:-1.51},
+  {n:"Chartres",c:"Francja",la:48.45,lo:1.49},
+  {n:"Siena",c:"Włochy",la:43.32,lo:11.33},
+  {n:"Piza",c:"Włochy",la:43.72,lo:10.4},
+  {n:"Werona",c:"Włochy",la:45.44,lo:10.99},
+  {n:"Amalfi",c:"Włochy",la:40.63,lo:14.6},
+  {n:"Matera",c:"Włochy",la:40.67,lo:16.6},
+  {n:"Assisi",c:"Włochy",la:43.07,lo:12.62},
+  {n:"Bergamo",c:"Włochy",la:45.7,lo:9.68},
+  {n:"Como",c:"Włochy",la:45.81,lo:9.09},
+  {n:"Cinque Terre",c:"Włochy",la:44.13,lo:9.73},
+  {n:"Agrigento",c:"Włochy",la:37.32,lo:13.58},
+  {n:"Segowia",c:"Hiszpania",la:40.95,lo:-4.12},
+  {n:"Toledo",c:"Hiszpania",la:39.86,lo:-4.02},
+  {n:"Salamanka",c:"Hiszpania",la:40.97,lo:-5.66},
+  {n:"Ronda",c:"Hiszpania",la:36.74,lo:-5.17},
+  {n:"Santiago de Compostela",c:"Hiszpania",la:42.88,lo:-8.54},
+  {n:"Zakopane",c:"Polska",la:49.3,lo:19.95},
+  {n:"Zamość",c:"Polska",la:50.72,lo:23.25},
+  {n:"Toruń",c:"Polska",la:53.01,lo:18.6},
+  {n:"Malbork",c:"Polska",la:54.04,lo:19.03},
+  {n:"Gniezno",c:"Polska",la:52.53,lo:17.59},
+  {n:"Tarnów",c:"Polska",la:50.01,lo:20.99},
+  {n:"Karlowe Wary",c:"Czechy",la:50.23,lo:12.87},
+  {n:"Český Krumlov",c:"Czechy",la:48.81,lo:14.32},
+  {n:"Kutná Hora",c:"Czechy",la:49.95,lo:15.27},
+  {n:"Ołomuniec",c:"Czechy",la:49.59,lo:17.25},
+  {n:"Hallstatt",c:"Austria",la:47.56,lo:13.65},
+  {n:"Zermatt",c:"Szwajcaria",la:46.02,lo:7.75},
+  {n:"Interlaken",c:"Szwajcaria",la:46.69,lo:7.86},
+  {n:"Montreux",c:"Szwajcaria",la:46.43,lo:6.91},
+  {n:"Lugano",c:"Szwajcaria",la:46.0,lo:8.95},
+  {n:"Santorini",c:"Grecja",la:36.39,lo:25.46},
+  {n:"Mykonos",c:"Grecja",la:37.45,lo:25.33},
+  {n:"Meteory",c:"Grecja",la:39.72,lo:21.63},
+  {n:"Rodos",c:"Grecja",la:36.43,lo:28.22},
+  {n:"Korfu",c:"Grecja",la:39.62,lo:19.92},
+  {n:"Delfy",c:"Grecja",la:38.48,lo:22.5},
+  {n:"Nafplion",c:"Grecja",la:37.57,lo:22.8},
+  {n:"Pula",c:"Chorwacja",la:44.87,lo:13.85},
+  {n:"Rovinj",c:"Chorwacja",la:45.08,lo:13.64},
+  {n:"Hvar",c:"Chorwacja",la:43.17,lo:16.44},
+  {n:"Kotor",c:"Czarnogóra",la:42.42,lo:18.77},
+  {n:"Mostar",c:"Bośnia i Herc.",la:43.34,lo:17.81},
+  {n:"Bled",c:"Słowenia",la:46.37,lo:14.11},
+  {n:"Ohrid",c:"Macedonia Płn.",la:41.11,lo:20.8},
+  {n:"Gjirokastra",c:"Albania",la:40.08,lo:20.14},
+  {n:"Sybin",c:"Rumunia",la:45.8,lo:24.15},
+  {n:"Sighișoara",c:"Rumunia",la:46.22,lo:24.79},
+  {n:"Wielkie Tyrnowo",c:"Bułgaria",la:43.08,lo:25.65},
+  {n:"Nessebar",c:"Bułgaria",la:42.66,lo:27.73},
+  {n:"Eger",c:"Węgry",la:47.9,lo:20.38},
+  {n:"Szentendre",c:"Węgry",la:47.67,lo:19.07},
+  {n:"Levoca",c:"Słowacja",la:49.02,lo:20.59},
+  {n:"Bardejów",c:"Słowacja",la:49.29,lo:21.28},
+  {n:"Sintra",c:"Portugalia",la:38.8,lo:-9.39},
+  {n:"Évora",c:"Portugalia",la:38.57,lo:-7.91},
+  {n:"Guimarães",c:"Portugalia",la:41.44,lo:-8.3},
+  {n:"Funchal",c:"Portugalia",la:32.65,lo:-16.91},
+  {n:"Oksford",c:"Wielka Brytania",la:51.75,lo:-1.26},
+  {n:"Cambridge",c:"Wielka Brytania",la:52.21,lo:0.12},
+  {n:"Bath",c:"Wielka Brytania",la:51.38,lo:-2.36},
+  {n:"York",c:"Wielka Brytania",la:53.96,lo:-1.08},
+  {n:"Trondheim",c:"Norwegia",la:63.43,lo:10.39},
+  {n:"Tromsø",c:"Norwegia",la:69.65,lo:18.96},
+  {n:"Visby",c:"Szwecja",la:57.64,lo:18.3},
+  {n:"Uppsala",c:"Szwecja",la:59.86,lo:17.64},
+  {n:"Turku",c:"Finlandia",la:60.45,lo:22.27},
+  {n:"Brugia",c:"Belgia",la:51.21,lo:3.22},
+  {n:"Gandawa",c:"Belgia",la:51.05,lo:3.72},
+  {n:"Delft",c:"Holandia",la:52.01,lo:4.36},
+  {n:"Maastricht",c:"Holandia",la:50.85,lo:5.69},
+  {n:"Cork",c:"Irlandia",la:51.9,lo:-8.47},
+  {n:"Galway",c:"Irlandia",la:53.27,lo:-9.06},
+];
+const EU_T4=[...EU_T1,...EU_T2,...EU_T3];
+const EU_POOL={1:EU_T1,2:EU_T2,3:EU_T3,4:EU_T4};
+
+// ══ ENGLISH DATABASE ══════════════════════════════════════════════════════
+const T1_EN=[
+  {n:"London",          c:"United Kingdom",    la:51.51, lo:-0.12  },
+  {n:"Paris",           c:"France",            la:48.85, lo:2.35   },
+  {n:"Berlin",          c:"Germany",           la:52.52, lo:13.40  },
+  {n:"Madrid",          c:"Spain",             la:40.42, lo:-3.70  },
+  {n:"Rome",            c:"Italy",             la:41.90, lo:12.50  },
+  {n:"Athens",          c:"Greece",            la:37.98, lo:23.73  },
+  {n:"Amsterdam",       c:"Netherlands",       la:52.37, lo:4.90   },
+  {n:"Lisbon",          c:"Portugal",          la:38.72, lo:-9.14  },
+  {n:"Stockholm",       c:"Sweden",            la:59.33, lo:18.07  },
+  {n:"Oslo",            c:"Norway",            la:59.91, lo:10.75  },
+  {n:"Copenhagen",      c:"Denmark",           la:55.68, lo:12.57  },
+  {n:"Vienna",          c:"Austria",           la:48.21, lo:16.37  },
+  {n:"Brussels",        c:"Belgium",           la:50.85, lo:4.35   },
+  {n:"Warsaw",          c:"Poland",            la:52.23, lo:21.01  },
+  {n:"Kyiv",            c:"Ukraine",           la:50.45, lo:30.52  },
+  {n:"Moscow",          c:"Russia",            la:55.75, lo:37.62  },
+  {n:"Washington D.C.", c:"USA",               la:38.91, lo:-77.04 },
+  {n:"New York",        c:"USA",               la:40.71, lo:-74.00 },
+  {n:"Los Angeles",     c:"USA",               la:34.05, lo:-118.24},
+  {n:"Chicago",         c:"USA",               la:41.88, lo:-87.63 },
+  {n:"Toronto",         c:"Canada",            la:43.65, lo:-79.38 },
+  {n:"Mexico City",     c:"Mexico",            la:19.43, lo:-99.13 },
+  {n:"Buenos Aires",    c:"Argentina",         la:-34.61,lo:-58.38 },
+  {n:"Rio de Janeiro",  c:"Brazil",            la:-22.91,lo:-43.17 },
+  {n:"São Paulo",       c:"Brazil",            la:-23.55,lo:-46.63 },
+  {n:"Lima",            c:"Peru",              la:-12.05,lo:-77.04 },
+  {n:"Istanbul",        c:"Turkey",            la:41.01, lo:28.95  },
+  {n:"Beijing",         c:"China",             la:39.91, lo:116.39 },
+  {n:"Shanghai",        c:"China",             la:31.23, lo:121.47 },
+  {n:"Tokyo",           c:"Japan",             la:35.68, lo:139.69 },
+  {n:"Seoul",           c:"South Korea",       la:37.57, lo:126.98 },
+  {n:"Dubai",           c:"UAE",               la:25.20, lo:55.27  },
+  {n:"Mumbai",          c:"India",             la:19.08, lo:72.88  },
+  {n:"Delhi",           c:"India",             la:28.61, lo:77.23  },
+  {n:"Bangkok",         c:"Thailand",          la:13.75, lo:100.52 },
+  {n:"Singapore",       c:"Singapore",         la:1.35,  lo:103.82 },
+  {n:"Jakarta",         c:"Indonesia",         la:-6.21, lo:106.85 },
+  {n:"Cairo",           c:"Egypt",             la:30.06, lo:31.25  },
+  {n:"Lagos",           c:"Nigeria",           la:6.52,  lo:3.38   },
+  {n:"Nairobi",         c:"Kenya",             la:-1.29, lo:36.82  },
+  {n:"Cape Town",       c:"South Africa",      la:-33.93,lo:18.42  },
+  {n:"Sydney",          c:"Australia",         la:-33.87,lo:151.21 },
+  {n:"Melbourne",       c:"Australia",         la:-37.81,lo:144.96 },
+  {n:"Barcelona",       c:"Spain",             la:41.39, lo:2.15   },
+  {n:"Munich",          c:"Germany",           la:48.14, lo:11.58  },
+  {n:"Prague",          c:"Czech Republic",    la:50.08, lo:14.44  },
+  {n:"Budapest",        c:"Hungary",           la:47.50, lo:19.04  },
+  {n:"Bucharest",       c:"Romania",           la:44.43, lo:26.10  },
+  {n:"Johannesburg",    c:"South Africa",      la:-26.20,lo:28.04  },
+  {n:"Casablanca",      c:"Morocco",           la:33.59, lo:-7.62  },
+];
+const T2_EN=[
+  {n:"Reykjavik",       c:"Iceland",           la:64.14, lo:-21.94 },
+  {n:"Helsinki",        c:"Finland",           la:60.17, lo:24.94  },
+  {n:"Dublin",          c:"Ireland",           la:53.33, lo:-6.25  },
+  {n:"Zurich",          c:"Switzerland",       la:47.38, lo:8.54   },
+  {n:"Bern",            c:"Switzerland",       la:46.95, lo:7.45   },
+  {n:"Bratislava",      c:"Slovakia",          la:48.15, lo:17.11  },
+  {n:"Ljubljana",       c:"Slovenia",          la:46.05, lo:14.51  },
+  {n:"Zagreb",          c:"Croatia",           la:45.81, lo:15.98  },
+  {n:"Sarajevo",        c:"Bosnia & Herz.",    la:43.85, lo:18.39  },
+  {n:"Belgrade",        c:"Serbia",            la:44.80, lo:20.46  },
+  {n:"Sofia",           c:"Bulgaria",          la:42.70, lo:23.32  },
+  {n:"Tbilisi",         c:"Georgia",           la:41.69, lo:44.83  },
+  {n:"Yerevan",         c:"Armenia",           la:40.18, lo:44.51  },
+  {n:"Baku",            c:"Azerbaijan",        la:40.41, lo:49.87  },
+  {n:"Tashkent",        c:"Uzbekistan",        la:41.30, lo:69.24  },
+  {n:"Ulaanbaatar",     c:"Mongolia",          la:47.91, lo:106.88 },
+  {n:"Hanoi",           c:"Vietnam",           la:21.03, lo:105.85 },
+  {n:"Kuala Lumpur",    c:"Malaysia",          la:3.14,  lo:101.69 },
+  {n:"Manila",          c:"Philippines",       la:14.60, lo:120.98 },
+  {n:"Dhaka",           c:"Bangladesh",        la:23.81, lo:90.41  },
+  {n:"Islamabad",       c:"Pakistan",          la:33.72, lo:73.06  },
+  {n:"Riyadh",          c:"Saudi Arabia",      la:24.69, lo:46.72  },
+  {n:"Tehran",          c:"Iran",              la:35.69, lo:51.42  },
+  {n:"Baghdad",         c:"Iraq",              la:33.34, lo:44.40  },
+  {n:"Beirut",          c:"Lebanon",           la:33.89, lo:35.50  },
+  {n:"Tel Aviv",        c:"Israel",            la:32.09, lo:34.79  },
+  {n:"Addis Ababa",     c:"Ethiopia",          la:9.03,  lo:38.74  },
+  {n:"Accra",           c:"Ghana",             la:5.55,  lo:-0.20  },
+  {n:"Dakar",           c:"Senegal",           la:14.72, lo:-17.47 },
+  {n:"Dar es Salaam",   c:"Tanzania",          la:-6.80, lo:39.27  },
+  {n:"Kinshasa",        c:"DR Congo",          la:-4.32, lo:15.32  },
+  {n:"Vancouver",       c:"Canada",            la:49.25, lo:-123.12},
+  {n:"Montreal",        c:"Canada",            la:45.50, lo:-73.57 },
+  {n:"Houston",         c:"USA",               la:29.76, lo:-95.37 },
+  {n:"Miami",           c:"USA",               la:25.77, lo:-80.19 },
+  {n:"San Francisco",   c:"USA",               la:37.77, lo:-122.42},
+  {n:"Seattle",         c:"USA",               la:47.61, lo:-122.33},
+  {n:"Bogotá",          c:"Colombia",          la:4.71,  lo:-74.07 },
+  {n:"Santiago",        c:"Chile",             la:-33.45,lo:-70.67 },
+  {n:"Colombo",         c:"Sri Lanka",         la:6.93,  lo:79.85  },
+  {n:"Auckland",        c:"New Zealand",       la:-36.86,lo:174.77 },
+  {n:"Osaka",           c:"Japan",             la:34.69, lo:135.50 },
+  {n:"Ho Chi Minh City",c:"Vietnam",           la:10.82, lo:106.63 },
+  {n:"Karachi",         c:"Pakistan",          la:24.86, lo:67.01  },
+  {n:"Alexandria",      c:"Egypt",             la:31.20, lo:29.92  },
+  {n:"Tunis",           c:"Tunisia",           la:36.82, lo:10.17  },
+  {n:"Algiers",         c:"Algeria",           la:36.74, lo:3.06   },
+  {n:"Tripoli",         c:"Libya",             la:32.90, lo:13.18  },
+  {n:"Amman",           c:"Jordan",            la:31.96, lo:35.95  },
+  {n:"Damascus",        c:"Syria",             la:33.51, lo:36.29  },
+];
+const T3_EN=[
+  {n:"Tallinn",         c:"Estonia",           la:59.44, lo:24.75  },
+  {n:"Riga",            c:"Latvia",            la:56.95, lo:24.11  },
+  {n:"Vilnius",         c:"Lithuania",         la:54.69, lo:25.28  },
+  {n:"Chisinau",        c:"Moldova",           la:47.01, lo:28.86  },
+  {n:"Tirana",          c:"Albania",           la:41.33, lo:19.83  },
+  {n:"Skopje",          c:"North Macedonia",   la:42.00, lo:21.43  },
+  {n:"Podgorica",       c:"Montenegro",        la:42.44, lo:19.26  },
+  {n:"Pristina",        c:"Kosovo",            la:42.67, lo:21.17  },
+  {n:"Vaduz",           c:"Liechtenstein",     la:47.14, lo:9.52   },
+  {n:"Andorra la Vella",c:"Andorra",           la:42.51, lo:1.52   },
+  {n:"San Marino",      c:"San Marino",        la:43.94, lo:12.45  },
+  {n:"Nicosia",         c:"Cyprus",            la:35.17, lo:33.37  },
+  {n:"Valletta",        c:"Malta",             la:35.90, lo:14.51  },
+  {n:"Luxembourg",      c:"Luxembourg",        la:49.61, lo:6.13   },
+  {n:"Minsk",           c:"Belarus",           la:53.90, lo:27.57  },
+  {n:"Astana",          c:"Kazakhstan",        la:51.18, lo:71.45  },
+  {n:"Bishkek",         c:"Kyrgyzstan",        la:42.87, lo:74.59  },
+  {n:"Ashgabat",        c:"Turkmenistan",      la:37.95, lo:58.38  },
+  {n:"Dushanbe",        c:"Tajikistan",        la:38.56, lo:68.77  },
+  {n:"Kathmandu",       c:"Nepal",             la:27.71, lo:85.31  },
+  {n:"Phnom Penh",      c:"Cambodia",          la:11.57, lo:104.92 },
+  {n:"Vientiane",       c:"Laos",              la:17.97, lo:102.60 },
+  {n:"Naypyidaw",       c:"Myanmar",           la:19.74, lo:96.13  },
+  {n:"Dili",            c:"East Timor",        la:-8.56, lo:125.58 },
+  {n:"Port Moresby",    c:"Papua New Guinea",  la:-9.44, lo:147.18 },
+  {n:"Suva",            c:"Fiji",              la:-18.14,lo:178.44 },
+  {n:"Apia",            c:"Samoa",             la:-13.83,lo:-171.77},
+  {n:"Nuku'alofa",      c:"Tonga",             la:-21.14,lo:-175.22},
+  {n:"Honiara",         c:"Solomon Islands",   la:-9.43, lo:160.05 },
+  {n:"Lusaka",          c:"Zambia",            la:-15.42,lo:28.28  },
+  {n:"Harare",          c:"Zimbabwe",          la:-17.83,lo:31.05  },
+  {n:"Antananarivo",    c:"Madagascar",        la:-18.91,lo:47.54  },
+  {n:"Windhoek",        c:"Namibia",           la:-22.56,lo:17.08  },
+  {n:"Gaborone",        c:"Botswana",          la:-24.65,lo:25.91  },
+  {n:"Maputo",          c:"Mozambique",        la:-25.97,lo:32.57  },
+  {n:"Kampala",         c:"Uganda",            la:0.32,  lo:32.58  },
+  {n:"Kigali",          c:"Rwanda",            la:-1.95, lo:30.06  },
+  {n:"Ouagadougou",     c:"Burkina Faso",      la:12.37, lo:-1.53  },
+  {n:"Bamako",          c:"Mali",              la:12.65, lo:-8.00  },
+  {n:"Niamey",          c:"Niger",             la:13.51, lo:2.11   },
+  {n:"N'Djamena",       c:"Chad",              la:12.11, lo:15.04  },
+  {n:"Khartoum",        c:"Sudan",             la:15.55, lo:32.53  },
+  {n:"Mogadishu",       c:"Somalia",           la:2.05,  lo:45.34  },
+  {n:"Djibouti",        c:"Djibouti",          la:11.59, lo:43.15  },
+  {n:"Portland",        c:"USA",               la:45.52, lo:-122.68},
+  {n:"Denver",          c:"USA",               la:39.74, lo:-104.98},
+  {n:"Nashville",       c:"USA",               la:36.17, lo:-86.78 },
+  {n:"Atlanta",         c:"USA",               la:33.75, lo:-84.39 },
+  {n:"Boston",          c:"USA",               la:42.36, lo:-71.06 },
+  {n:"New Orleans",     c:"USA",               la:29.95, lo:-90.07 },
+  {n:"Las Vegas",       c:"USA",               la:36.17, lo:-115.14},
+  {n:"Phoenix",         c:"USA",               la:33.45, lo:-112.07},
+  {n:"Guadalajara",     c:"Mexico",            la:20.66, lo:-103.35},
+  {n:"Havana",          c:"Cuba",              la:23.13, lo:-82.38 },
+  {n:"Quito",           c:"Ecuador",           la:-0.22, lo:-78.51 },
+  {n:"La Paz",          c:"Bolivia",           la:-16.50,lo:-68.15 },
+  {n:"Asunción",        c:"Paraguay",          la:-25.29,lo:-57.65 },
+  {n:"Montevideo",      c:"Uruguay",           la:-34.90,lo:-56.19 },
+  {n:"Bangalore",       c:"India",             la:12.97, lo:77.59  },
+  {n:"Chennai",         c:"India",             la:13.08, lo:80.27  },
+  {n:"Chengdu",         c:"China",             la:30.57, lo:104.07 },
+  {n:"Shenzhen",        c:"China",             la:22.54, lo:114.06 },
+  {n:"Hong Kong",       c:"China (SAR)",       la:22.32, lo:114.17 },
+  {n:"Taipei",          c:"Taiwan",            la:25.03, lo:121.56 },
+  {n:"Perth",           c:"Australia",         la:-31.95,lo:115.86 },
+  {n:"Brisbane",        c:"Australia",         la:-27.47,lo:153.02 },
+  {n:"Wellington",      c:"New Zealand",       la:-41.29,lo:174.78 },
+];
+const T4_EN=[...T1_EN,...T2_EN,...T3_EN];
+const POOL_EN={1:T1_EN,2:T2_EN,3:T3_EN,4:T4_EN};
+
+// ══ ENGLISH EUROPE DATABASE ═══════════════════════════════════════════════
+const EU_T1_EN=[
+  {n:"London",          c:"United Kingdom",    la:51.51, lo:-0.12  },
+  {n:"Paris",           c:"France",            la:48.85, lo:2.35   },
+  {n:"Berlin",          c:"Germany",           la:52.52, lo:13.40  },
+  {n:"Madrid",          c:"Spain",             la:40.42, lo:-3.70  },
+  {n:"Rome",            c:"Italy",             la:41.90, lo:12.50  },
+  {n:"Amsterdam",       c:"Netherlands",       la:52.37, lo:4.90   },
+  {n:"Vienna",          c:"Austria",           la:48.21, lo:16.37  },
+  {n:"Brussels",        c:"Belgium",           la:50.85, lo:4.35   },
+  {n:"Lisbon",          c:"Portugal",          la:38.72, lo:-9.14  },
+  {n:"Stockholm",       c:"Sweden",            la:59.33, lo:18.07  },
+  {n:"Oslo",            c:"Norway",            la:59.91, lo:10.75  },
+  {n:"Copenhagen",      c:"Denmark",           la:55.68, lo:12.57  },
+  {n:"Helsinki",        c:"Finland",           la:60.17, lo:24.94  },
+  {n:"Zurich",          c:"Switzerland",       la:47.38, lo:8.54   },
+  {n:"Prague",          c:"Czech Republic",    la:50.08, lo:14.44  },
+  {n:"Budapest",        c:"Hungary",           la:47.50, lo:19.04  },
+  {n:"Warsaw",          c:"Poland",            la:52.23, lo:21.01  },
+  {n:"Athens",          c:"Greece",            la:37.98, lo:23.73  },
+  {n:"Bucharest",       c:"Romania",           la:44.43, lo:26.10  },
+  {n:"Dublin",          c:"Ireland",           la:53.33, lo:-6.25  },
+  {n:"Reykjavik",       c:"Iceland",           la:64.14, lo:-21.94 },
+  {n:"Luxembourg",      c:"Luxembourg",        la:49.61, lo:6.13   },
+  {n:"Barcelona",       c:"Spain",             la:41.39, lo:2.15   },
+  {n:"Munich",          c:"Germany",           la:48.14, lo:11.58  },
+  {n:"Milan",           c:"Italy",             la:45.46, lo:9.19   },
+  {n:"Lyon",            c:"France",            la:45.75, lo:4.85   },
+  {n:"Edinburgh",       c:"United Kingdom",    la:55.95, lo:-3.19  },
+  {n:"Krakow",          c:"Poland",            la:50.06, lo:19.94  },
+  {n:"Belgrade",        c:"Serbia",            la:44.80, lo:20.46  },
+  {n:"Sofia",           c:"Bulgaria",          la:42.70, lo:23.32  },
+];
+const EU_T2_EN=[
+  {n:"Hamburg",         c:"Germany",           la:53.55, lo:10.00  },
+  {n:"Frankfurt",       c:"Germany",           la:50.11, lo:8.68   },
+  {n:"Cologne",         c:"Germany",           la:50.94, lo:6.96   },
+  {n:"Düsseldorf",      c:"Germany",           la:51.22, lo:6.78   },
+  {n:"Dresden",         c:"Germany",           la:51.05, lo:13.74  },
+  {n:"Stuttgart",       c:"Germany",           la:48.78, lo:9.18   },
+  {n:"Marseille",       c:"France",            la:43.30, lo:5.37   },
+  {n:"Toulouse",        c:"France",            la:43.60, lo:1.44   },
+  {n:"Nice",            c:"France",            la:43.70, lo:7.27   },
+  {n:"Strasbourg",      c:"France",            la:48.58, lo:7.75   },
+  {n:"Naples",          c:"Italy",             la:40.85, lo:14.27  },
+  {n:"Turin",           c:"Italy",             la:45.07, lo:7.69   },
+  {n:"Florence",        c:"Italy",             la:43.77, lo:11.25  },
+  {n:"Venice",          c:"Italy",             la:45.44, lo:12.33  },
+  {n:"Palermo",         c:"Italy",             la:38.12, lo:13.36  },
+  {n:"Seville",         c:"Spain",             la:37.39, lo:-5.99  },
+  {n:"Valencia",        c:"Spain",             la:39.47, lo:-0.38  },
+  {n:"Bilbao",          c:"Spain",             la:43.26, lo:-2.93  },
+  {n:"Porto",           c:"Portugal",          la:41.15, lo:-8.61  },
+  {n:"Manchester",      c:"United Kingdom",    la:53.48, lo:-2.24  },
+  {n:"Birmingham",      c:"United Kingdom",    la:52.48, lo:-1.90  },
+  {n:"Glasgow",         c:"United Kingdom",    la:55.86, lo:-4.25  },
+  {n:"Rotterdam",       c:"Netherlands",       la:51.92, lo:4.48   },
+  {n:"Antwerp",         c:"Belgium",           la:51.22, lo:4.40   },
+  {n:"Bruges",          c:"Belgium",           la:51.21, lo:3.22   },
+  {n:"Gothenburg",      c:"Sweden",            la:57.71, lo:11.97  },
+  {n:"Bergen",          c:"Norway",            la:60.39, lo:5.32   },
+  {n:"Salzburg",        c:"Austria",           la:47.80, lo:13.04  },
+  {n:"Innsbruck",       c:"Austria",           la:47.27, lo:11.39  },
+  {n:"Geneva",          c:"Switzerland",       la:46.20, lo:6.15   },
+  {n:"Bratislava",      c:"Slovakia",          la:48.15, lo:17.11  },
+  {n:"Zagreb",          c:"Croatia",           la:45.81, lo:15.98  },
+  {n:"Dubrovnik",       c:"Croatia",           la:42.65, lo:18.09  },
+  {n:"Split",           c:"Croatia",           la:43.51, lo:16.44  },
+  {n:"Ljubljana",       c:"Slovenia",          la:46.05, lo:14.51  },
+  {n:"Sarajevo",        c:"Bosnia & Herz.",    la:43.85, lo:18.39  },
+  {n:"Thessaloniki",    c:"Greece",            la:40.64, lo:22.94  },
+  {n:"Tallinn",         c:"Estonia",           la:59.44, lo:24.75  },
+  {n:"Riga",            c:"Latvia",            la:56.95, lo:24.11  },
+  {n:"Vilnius",         c:"Lithuania",         la:54.69, lo:25.28  },
+  {n:"Gdansk",          c:"Poland",            la:54.35, lo:18.65  },
+  {n:"Wroclaw",         c:"Poland",            la:51.11, lo:17.04  },
+  {n:"Tirana",          c:"Albania",           la:41.33, lo:19.83  },
+  {n:"Skopje",          c:"North Macedonia",   la:42.00, lo:21.43  },
+  {n:"Cluj-Napoca",     c:"Romania",           la:46.77, lo:23.59  },
+  {n:"Plovdiv",         c:"Bulgaria",          la:42.14, lo:24.75  },
+];
+const EU_T3_EN=[
+  {n:"Oxford",          c:"United Kingdom",    la:51.75, lo:-1.26  },
+  {n:"Cambridge",       c:"United Kingdom",    la:52.21, lo:0.12   },
+  {n:"Bath",            c:"United Kingdom",    la:51.38, lo:-2.36  },
+  {n:"York",            c:"United Kingdom",    la:53.96, lo:-1.08  },
+  {n:"Ghent",           c:"Belgium",           la:51.05, lo:3.72   },
+  {n:"Hallstatt",       c:"Austria",           la:47.56, lo:13.65  },
+  {n:"Zermatt",         c:"Switzerland",       la:46.02, lo:7.75   },
+  {n:"Interlaken",      c:"Switzerland",       la:46.69, lo:7.86   },
+  {n:"Lucerne",         c:"Switzerland",       la:47.05, lo:8.31   },
+  {n:"Heidelberg",      c:"Germany",           la:49.40, lo:8.69   },
+  {n:"Rothenburg",      c:"Germany",           la:49.38, lo:10.18  },
+  {n:"Cologne Cathedral",c:"Germany",          la:50.94, lo:6.96   },
+  {n:"Carcassonne",     c:"France",            la:43.21, lo:2.35   },
+  {n:"Mont-Saint-Michel",c:"France",           la:48.64, lo:-1.51  },
+  {n:"Avignon",         c:"France",            la:43.95, lo:4.81   },
+  {n:"Colmar",          c:"France",            la:48.08, lo:7.36   },
+  {n:"Siena",           c:"Italy",             la:43.32, lo:11.33  },
+  {n:"Pisa",            c:"Italy",             la:43.72, lo:10.40  },
+  {n:"Verona",          c:"Italy",             la:45.44, lo:10.99  },
+  {n:"Amalfi",          c:"Italy",             la:40.63, lo:14.60  },
+  {n:"Cinque Terre",    c:"Italy",             la:44.13, lo:9.73   },
+  {n:"Assisi",          c:"Italy",             la:43.07, lo:12.62  },
+  {n:"Santorini",       c:"Greece",            la:36.39, lo:25.46  },
+  {n:"Mykonos",         c:"Greece",            la:37.45, lo:25.33  },
+  {n:"Meteora",         c:"Greece",            la:39.72, lo:21.63  },
+  {n:"Rhodes",          c:"Greece",            la:36.43, lo:28.22  },
+  {n:"Corfu",           c:"Greece",            la:39.62, lo:19.92  },
+  {n:"Delphi",          c:"Greece",            la:38.48, lo:22.50  },
+  {n:"Pula",            c:"Croatia",           la:44.87, lo:13.85  },
+  {n:"Hvar",            c:"Croatia",           la:43.17, lo:16.44  },
+  {n:"Kotor",           c:"Montenegro",        la:42.42, lo:18.77  },
+  {n:"Mostar",          c:"Bosnia & Herz.",    la:43.34, lo:17.81  },
+  {n:"Bled",            c:"Slovenia",          la:46.37, lo:14.11  },
+  {n:"Sintra",          c:"Portugal",          la:38.80, lo:-9.39  },
+  {n:"Funchal",         c:"Portugal (Madeira)",la:32.65, lo:-16.91 },
+  {n:"Santiago de Compostela",c:"Spain",       la:42.88, lo:-8.54  },
+  {n:"Toledo",          c:"Spain",             la:39.86, lo:-4.02  },
+  {n:"Granada",         c:"Spain",             la:37.18, lo:-3.60  },
+  {n:"Ronda",           c:"Spain",             la:36.74, lo:-5.17  },
+  {n:"Český Krumlov",   c:"Czech Republic",    la:48.81, lo:14.32  },
+  {n:"Karlovy Vary",    c:"Czech Republic",    la:50.23, lo:12.87  },
+  {n:"Tromsø",          c:"Norway",            la:69.65, lo:18.96  },
+  {n:"Trondheim",       c:"Norway",            la:63.43, lo:10.39  },
+  {n:"Uppsala",         c:"Sweden",            la:59.86, lo:17.64  },
+  {n:"Visby",           c:"Sweden",            la:57.64, lo:18.30  },
+  {n:"Turku",           c:"Finland",           la:60.45, lo:22.27  },
+  {n:"Olomouc",         c:"Czech Republic",    la:49.59, lo:17.25  },
+  {n:"Sibiu",           c:"Romania",           la:45.80, lo:24.15  },
+  {n:"Sighisoara",      c:"Romania",           la:46.22, lo:24.79  },
+  {n:"Ohrid",           c:"North Macedonia",   la:41.11, lo:20.80  },
+  {n:"Maastricht",      c:"Netherlands",       la:50.85, lo:5.69   },
+  {n:"Delft",           c:"Netherlands",       la:52.01, lo:4.36   },
+  {n:"Galway",          c:"Ireland",           la:53.27, lo:-9.06  },
+  {n:"Cork",            c:"Ireland",           la:51.90, lo:-8.47  },
+];
+const EU_T4_EN=[...EU_T1_EN,...EU_T2_EN,...EU_T3_EN];
+const EU_POOL_EN={1:EU_T1_EN,2:EU_T2_EN,3:EU_T3_EN,4:EU_T4_EN};
+
+
+function calcPointsEU(km, mult) {
+  const bp=[[0,1200],[5,1200],[20,1000],[50,800],[100,600],[200,400],[400,200],[800,100],[1500,0]];
+  let raw=0;
+  if(km<=5) raw=1200;
+  else if(km>=1500) raw=0;
+  else for(let i=1;i<bp.length;i++){
+    const[x0,y0]=bp[i-1],[x1,y1]=bp[i];
+    if(km<=x1){raw=y0+(km-x0)/(x1-x0)*(y1-y0);break;}
+  }
+  return Math.round(raw*mult);
+}
+const POOL={1:T1,2:T2,3:T3,4:T4};
+const EU_BOUNDS=[[31,-25],[72,44]]; // Europa: S33, W25, N72, E44
+
+
+
+// ══ STATE ═════════════════════════════════════════════════════════════════
+let G={
+  mode:'world',
+  nick:'',diff:'easy',diffCfg:null,
+  levelIdx:0,qIdx:0,lvlScore:0,totalScore:0,
+  queue:[],current:null,answered:false,
+  timerSec:15,timerTotal:15,timerInterval:null,
+  markers:[],line:null,active:false,
+  usedInTier:{},shownThisLevel:new Set(),
+  lvlFirstPassDone:new Set(),
+  lvlRestarts:0,
+};
+
+// ══ MAP ═══════════════════════════════════════════════════════════════════
+const SOUTH = -60, NORTH = 72;
+const WORLD_BOUNDS = [[SOUTH,-178],[NORTH,178]];
+
+const map = L.map('map',{
+  zoomControl:false, attributionControl:true,
+  scrollWheelZoom:true, doubleClickZoom:false,
+  touchZoom:true, boxZoom:false, keyboard:false, dragging:true,
+  worldCopyJump:false,
+  maxBoundsViscosity:1.0,
+  center:[20,10], zoom:2,
+});
+
+// voyager_nolabels = jasna, czytelna mapa bez etykiet (dzień)
+// dark_matter_nolabels = ciemna bez etykiet (noc) — filtr CSS rozjaśnia
+const TILE_LIGHT = 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png';
+const TILE_DARK  = 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png';
+const TILE_ATTR  = '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>';
+
+let tileLayer = L.tileLayer(
+  document.documentElement.getAttribute('data-theme')==='dark' ? TILE_DARK : TILE_LIGHT,
+  { attribution: TILE_ATTR, subdomains:'abcd', maxZoom:19, noWrap:true }
+).addTo(map);
+
+// Skonsolidowana funkcja: ustaw granice i zablokuj zoom
+let G_minZoom = 1; // globalny minZoom zależny od trybu
+function applyBounds(bounds, callback){
+  map.setMaxBounds(bounds);
+  map.setMinZoom(1); map.setMaxZoom(8);
+  map.invalidateSize();
+  map.fitBounds(bounds, {padding:[0,0], animate:false});
+  // moveend nie odpala gdy widok sie nie zmienia - setTimeout jako fallback
+  let done = false;
+  const finish = ()=>{
+    if(done) return;
+    done = true;
+    map.off('moveend', finish);
+    G_minZoom = map.getZoom();
+    map.setMinZoom(G_minZoom);
+    map.setMaxZoom(8);
+    if(callback) callback();
+  };
+  map.once('moveend', finish);
+  setTimeout(finish, 200);
+}
+// Reset widoku do pelnego (bez zmiany granic/zoomlimits)
+function resetView(){
+  map.setZoom(G_minZoom, {animate:true});
+}
+
+applyBounds(WORLD_BOUNDS);
+
+const redIcon  =L.divIcon({className:'',html:'<div class="marker-red"></div>',  iconSize:[18,18],iconAnchor:[9,9]});
+const greenIcon=L.divIcon({className:'',html:'<div class="marker-green"></div>',iconSize:[18,18],iconAnchor:[9,9]});
+
+// ══ SCORING ═══════════════════════════════════════════════════════════════
+function calcPoints(km,mult,mode){
+  if(mode==='europe') return calcPointsEU(km,mult);
+  const bp=[[0,1000],[200,800],[500,600],[1000,400],[2000,200],[4000,100],[8000,0]];
+  let raw=0;
+  if(km<=0)raw=1000;
+  else if(km>=8000)raw=0;
+  else for(let i=1;i<bp.length;i++){
+    const[x0,y0]=bp[i-1],[x1,y1]=bp[i];
+    if(km<=x1){raw=y0+(km-x0)/(x1-x0)*(y1-y0);break;}
+  }
+  return Math.round(raw*mult);
+}
+function haversine(la1,lo1,la2,lo2){
+  const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ══ LEADERBOARD ═══════════════════════════════════════════════════════════
+const LB_KEY_WORLD='tiqv4_lb_world', LB_KEY_EU='tiqv4_lb_europe';
+let lbActiveTab='world';
+function lbKey(mode){return mode==='europe'?LB_KEY_EU:LB_KEY_WORLD;}
+function loadLB(mode){try{return JSON.parse(localStorage.getItem(lbKey(mode)))||[];}catch{return[];}}
+function saveLB(lb,mode){localStorage.setItem(lbKey(mode),JSON.stringify(lb));}
+function addScore(nick,score,diff,mode){
+  let lb=loadLB(mode);
+  lb.push({nick,score,diff});
+  lb.sort((a,b)=>b.score-a.score);
+  lb=lb.slice(0,10);
+  saveLB(lb,mode);
+  return lb.findIndex(e=>e.nick===nick&&e.score===score);
+}
+function renderLB(hi=-1){
+  const lb=loadLB(lbActiveTab);
+  const body=document.getElementById('lbBody');
+  const dcls={easy:'lb-easy',medium:'lb-med',hard:'lb-hard'};
+  const dlbl=I18N[LANG].diffLabels;
+  if(!lb.length){body.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);font-size:.9rem">${I18N[LANG].lbEmpty}</td></tr>`;return;}
+  body.innerHTML=lb.map((e,i)=>`<tr class="${i===hi?'hl':''}">
+    <td class="lb-rank ${i<3?'top3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
+    <td class="lb-nick">${e.nick}</td>
+    <td><span class="lb-dbadge ${dcls[e.diff]||'lb-easy'}">${dlbl[e.diff]||e.diff}</span></td>
+    <td class="lb-score">${e.score.toLocaleString('pl')}</td>
+  </tr>`).join('');
+}
+function switchLBTab(mode){
+  lbActiveTab=mode;
+  document.getElementById('lbTabWorld').classList.toggle('selected', mode==='world');
+  document.getElementById('lbTabEurope').classList.toggle('selected', mode==='europe');
+  renderLB();
+}
+function showLB(hi=-1){
+  // otwórz na zakładce aktualnego trybu gry (lub world domyślnie)
+  const mode = (G && G.mode) ? G.mode : 'world';
+  lbActiveTab=mode;
+  document.getElementById('lbTabWorld').classList.toggle('selected', mode==='world');
+  document.getElementById('lbTabEurope').classList.toggle('selected', mode==='europe');
+  renderLB(hi);
+  document.getElementById('lbScreen').classList.remove('hidden');
+}
+function hideLB(){document.getElementById('lbScreen').classList.add('hidden');}
+function clearLB(){if(confirm(I18N[LANG].lbConfirmClear)){saveLB([],lbActiveTab);renderLB();}}
+
+// ══ THEME ═════════════════════════════════════════════════════════════════
+let dark=true;
+function toggleTheme(){
+  dark=!dark;
+  document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+  const L=I18N[LANG];
+  document.getElementById('themeBtn').textContent=dark?L.themeLight:L.themeDark;
+  document.getElementById('themeBtnHdr').textContent=dark?'☀️':'🌙';
+  if(typeof tileLayer!=='undefined') tileLayer.setUrl(dark?TILE_DARK:TILE_LIGHT);
+}
+function selectMode(el){
+  document.querySelectorAll('.mode-opt').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectDiff(el){
+  document.querySelectorAll('.diff-opt').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+const shuffle=arr=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+function pickCities(tier,n){
+  const pool=(G.mode==='europe'?(LANG==='en'?EU_POOL_EN:EU_POOL):(LANG==='en'?POOL_EN:POOL))[tier];
+  if(!G.usedInTier[tier])G.usedInTier[tier]=new Set();
+  const used=G.usedInTier[tier];
+  const wi=pool.map((c,i)=>({c,i}));
+  let av=wi.filter(({i})=>!used.has(i));
+  if(av.length<n){used.clear();av=[...wi];}
+  const picked=shuffle(av).slice(0,n);
+  picked.forEach(({i})=>used.add(i));
+  return picked.map(({c})=>c);
+}
+function maxPts(){return Q_PER_LVL*BASE_MAX*G.diffCfg.mult;}
+function thrPct(){return G.diffCfg.thresholds[G.levelIdx];}
+function thrPts(){return Math.round(maxPts()*thrPct()/100);}
+
+// ══ GAME FLOW ═════════════════════════════════════════════════════════════
+function startGame(){
+  const nickEl=document.getElementById('nickInput');
+  const nick=nickEl.value.trim();
+  if(!nick){
+    nickEl.style.borderColor='var(--red)';
+    nickEl.focus();
+    nickEl.placeholder=I18N[LANG].nickRequired;
+    setTimeout(()=>{nickEl.style.borderColor='';nickEl.placeholder=I18N[LANG].nickPlaceholder;},2000);
+    return;
+  }
+  G.mode=document.querySelector('.mode-opt.selected')?.dataset.mode||'world';
+  G.nick=nick;
+  G.diff=document.querySelector('.diff-opt.selected')?.dataset.diff||'easy';
+  G.diffCfg=DIFF[G.diff];
+  G.levelIdx=0; G.qIdx=0; G.lvlScore=0; G.totalScore=0;
+  G.usedInTier={}; G.lvlFirstPassDone=new Set();
+  G.queue=[]; G.current=null; G.answered=false;
+  G.lvlRestarts=0; G.shownThisLevel=new Set();
+  document.getElementById('startScreen').classList.add('hidden');
+  const db=document.getElementById('diffBadge');
+  db.textContent=I18N[LANG].diffLabels[G.diff]||G.diff; db.className='diff-badge '+G.diffCfg.cls;
+  applyBounds(G.mode==='europe' ? EU_BOUNDS : WORLD_BOUNDS, loadLevel);
+}
+function loadLevel(){
+  G.qIdx=0;G.lvlScore=0;G.lvlRestarts=0;G.shownThisLevel=new Set();
+  G.queue=pickCities(LEVELS[G.levelIdx].tier,Q_PER_LVL);
+  G.active=true;
+  updateHeader();updateProgress();loadQuestion();
+}
+function retryLevel(){
+  document.getElementById('lvlFailScreen').classList.add('hidden');
+  G.qIdx=0;G.lvlScore=0;G.lvlRestarts++;G.shownThisLevel=new Set();
+  G.queue=pickCities(LEVELS[G.levelIdx].tier,Q_PER_LVL);
+  G.active=true;
+  updateHeader();updateProgress();loadQuestion();
+}
+function confirmRestart(){
+  if(!G.active)return;
+  G.totalScore-=G.lvlScore;
+  G.qIdx=0;G.lvlScore=0;G.lvlRestarts++;G.shownThisLevel=new Set();
+  clearMapLayers();clearInterval(G.timerInterval);
+  G.queue=pickCities(LEVELS[G.levelIdx].tier,Q_PER_LVL);
+  hideOverlay();updateScoreDisplays();updateProgress();loadQuestion();
+}
+function nextLevel(){
+  document.getElementById('lvlPassScreen').classList.add('hidden');
+  G.levelIdx++;
+  if(G.levelIdx>=LEVELS.length){endGame();return;}
+  loadLevel();
+}
+function goToStart(){
+  ['lvlFailScreen','lvlPassScreen','endScreen','lbScreen'].forEach(id=>
+    document.getElementById(id).classList.add('hidden'));
+  clearInterval(G.timerInterval);
+  clearMapLayers();
+  hideOverlay();
+  // Pełny reset stanu gry
+  G.active=false;
+  G.answered=false;
+  G.levelIdx=0;
+  G.qIdx=0;
+  G.lvlScore=0;
+  G.totalScore=0;
+  G.queue=[];
+  G.current=null;
+  G.timerSec=0;
+  G.lvlRestarts=0;
+  G.usedInTier={};
+  G.shownThisLevel=new Set();
+  G.lvlFirstPassDone=new Set();
+  // Reset widoku mapy
+  applyBounds(WORLD_BOUNDS);
+  document.getElementById('startScreen').classList.remove('hidden');
+}
+
+function loadQuestion(){
+  clearMapLayers();hideOverlay();
+  G.answered=false;
+  G.current=G.queue[G.qIdx];
+  G.shownThisLevel.add(G.current.n);
+  document.getElementById('cityName').textContent=G.current.n;
+  const cEl=document.getElementById('cityCountry');
+  // medium ukrywa kraj w ostatnich 3 poziomach (Ekspert 1-3 = idx 9,10,11), hard zawsze ukrywa
+  const hideCountry = !G.diffCfg.showCountry || (G.levelIdx>=9);
+  if(!hideCountry){cEl.textContent=G.current.c;cEl.className='city-country';}
+  else{cEl.textContent=I18N[LANG].country_unknown;cEl.className='city-country unknown';}
+  document.getElementById('qDisplay').textContent=`${G.qIdx+1}/${Q_PER_LVL}`;
+  document.getElementById('tierQ').textContent=I18N[LANG].qLabel(G.qIdx+1,Q_PER_LVL);
+  resetView();
+  startTimer();
+}
+function startTimer(){
+  clearInterval(G.timerInterval);
+  G.timerTotal=G.diffCfg.timerSec;
+  G.timerSec=G.timerTotal;updateTimerDisplay();
+  G.timerInterval=setInterval(()=>{
+    G.timerSec--;updateTimerDisplay();
+    if(G.timerSec<=0){clearInterval(G.timerInterval);if(!G.answered)timeOut();}
+  },1000);
+}
+function updateTimerDisplay(){
+  const bar=document.getElementById('timerBar');
+  const val=document.getElementById('timerVal');
+  const grp=document.getElementById('timerGroup');
+  const pct=G.timerSec/G.timerTotal*100;
+  bar.style.width=pct+'%';
+  const urgent=G.timerSec<=5;
+  const panic=G.timerSec<=3&&G.timerSec>0;
+  bar.classList.toggle('urgent',urgent);
+  val.textContent=G.timerSec;
+  val.classList.toggle('urgent',urgent);
+  // efekt paniki — pulsowanie całego timera przy ≤3s
+  grp.classList.toggle('panic',panic);
+}
+function timeOut(){G.answered=true;placeTarget();map.panTo([G.current.la,G.current.lo],{animate:true,duration:0.6});showOverlay(null,0);}
+
+map.on('click',e=>{
+  if(!G.active||G.answered)return;
+  clearInterval(G.timerInterval);
+  G.answered=true;
+  const{lat,lng}=e.latlng;
+  const km=haversine(lat,lng,G.current.la,G.current.lo);
+  const distPts=calcPoints(km,G.diffCfg.mult,G.mode);
+  const timePts=G.timerSec>0?G.timerSec*G.diffCfg.timeBonusPts:0;
+  const pts=distPts+timePts;
+  G.lvlScore+=pts;G.totalScore+=pts;
+  updateScoreDisplays();updateProgress();
+  G.markers.push(L.marker([lat,lng],{icon:redIcon})
+    .bindTooltip('Twój wybór',{permanent:false,direction:'top'}).addTo(map));
+placeTarget();
+  G.line=L.polyline([[lat,lng],[G.current.la,G.current.lo]],
+    {color:'rgba(255,255,255,.5)',weight:2,dashArray:'5,6'}).addTo(map);
+  map.fitBounds([[lat,lng],[G.current.la,G.current.lo]],
+    {padding:[80,80],paddingBottomRight:[80,160],animate:true,duration:0.6});
+  showOverlay(km,distPts,timePts);
+});
+
+function placeTarget(){
+  G.markers.push(L.marker([G.current.la,G.current.lo],{icon:greenIcon})
+    .bindTooltip(G.current.n,{permanent:true,direction:'top',offset:[0,-10]}).addTo(map));
+}
+
+// ══ MAP OVERLAY ═══════════════════════════════════════════════════════════
+function showOverlay(km,distPts,timePts){
+  const ov=document.getElementById('mapOverlay');
+  const isLast=G.qIdx===Q_PER_LVL-1;
+  document.getElementById('moBtn').textContent=isLast?I18N[LANG].finishLvlBtn:I18N[LANG].nextBtn;
+
+  const toEl=document.getElementById('moTimeout');
+  const distEl=document.getElementById('moDist');
+  const ptsEl=document.getElementById('moPts');
+  const timeBonusEl=document.getElementById('moTimeBonus');
+
+  if(km===null){
+    distEl.innerHTML='– <em>km</em>';
+    toEl.classList.remove('hidden');
+    ptsEl.textContent='0 pkt';
+    ptsEl.className='mo-pts-val bad';
+    timeBonusEl.classList.add('hidden');
+  }else{
+    toEl.classList.add('hidden');
+    distEl.innerHTML=`${Math.round(km).toLocaleString('pl')} <em>km</em>`;
+    const total=distPts+(timePts||0);
+    ptsEl.textContent=`+${total}`;
+    const maxQ=Math.round(BASE_MAX*G.diffCfg.mult);
+    ptsEl.className='mo-pts-val '+(distPts>=maxQ*.6?'good':distPts>=maxQ*.25?'ok':'bad');
+    if(timePts>0){
+      timeBonusEl.textContent=I18N[LANG].timeBonusTxt(timePts);
+      timeBonusEl.classList.remove('hidden');
+    }else{
+      timeBonusEl.classList.add('hidden');
+    }
+  }
+  ov.classList.add('show');
+}
+function hideOverlay(){document.getElementById('mapOverlay').classList.remove('show');}
+
+function nextQuestion(){
+  G.qIdx++;
+  if(G.qIdx>=Q_PER_LVL)endLevel();else loadQuestion();
+}
+
+// ══ LEVEL END ═════════════════════════════════════════════════════════════
+function endLevel(){
+  G.active=false;clearInterval(G.timerInterval);clearMapLayers();hideOverlay();
+  const thr=thrPts(),maxL=maxPts(),pct=Math.round(G.lvlScore/maxL*100);
+  const cfg=LEVELS[G.levelIdx];
+  // Bonus za 1. próbę: przyznawany raz per poziom per rozgrywka (nie globalnie)
+  // lvlRestarts===0 oznacza brak restartów w tej sesji tego poziomu
+  const isFirstAttempt = G.lvlRestarts===0;
+  const bonusAlreadyGiven = G.lvlFirstPassDone.has(G.levelIdx);
+  const bonus = isFirstAttempt && !bonusAlreadyGiven;
+
+  if(G.lvlScore>=thr){
+    const bAmt=bonus?Math.round(NO_REPEAT_BONUS*G.diffCfg.mult):0;
+    G.lvlScore+=bAmt;G.totalScore+=bAmt;
+    if(bonus) G.lvlFirstPassDone.add(G.levelIdx); // zapamiętaj — w kolejnej grze znów można dostać
+    document.getElementById('lvlPassTitle').textContent=I18N[LANG].levelLabels[G.levelIdx]+' - '+(LANG==='pl'?'zaliczono!':'passed!');
+    const loc=LANG==='pl'?'pl':'en';
+    document.getElementById('lvlPassScore').textContent=G.lvlScore.toLocaleString(loc);
+    const bb=document.getElementById('bonusBlock');
+    if(bonus){document.getElementById('bonusPts').textContent='+'+bAmt.toLocaleString(loc)+' '+(LANG==='pl'?'pkt':'pts');bb.classList.remove('hidden');}
+    else bb.classList.add('hidden');
+    document.getElementById('lvlPassDetail').textContent=I18N[LANG].lvlPassDetail(pct,thrPct(),thr,G.totalScore);
+    document.getElementById('lvlPassBtn').textContent=G.levelIdx===LEVELS.length-1?I18N[LANG].finishGameBtn:I18N[LANG].nextLvlBtn;
+    document.getElementById('lvlPassScreen').classList.remove('hidden');
+  }else{
+    document.getElementById('lvlFailScore').textContent=G.lvlScore.toLocaleString(LANG==='pl'?'pl':'en');
+    document.getElementById('lvlFailDetail').textContent=I18N[LANG].lvlFailDetail(pct,thrPct(),thr,(thr-G.lvlScore),G.totalScore);
+    G.totalScore-=G.lvlScore;
+    document.getElementById('lvlFailScreen').classList.remove('hidden');
+  }
+  updateScoreDisplays();
+}
+
+function endGame(){
+  const s=G.totalScore;
+  const rank=addScore(G.nick,s,G.diff,G.mode);
+  const titles=I18N[LANG].endTitles;
+  const[,title,sub]=titles.find(([min])=>s>=min)||titles[titles.length-1];
+  document.getElementById('endTitle').textContent=title;
+  document.getElementById('endScore').textContent=s.toLocaleString(LANG==='pl'?'pl':'en')+(LANG==='pl'?' pkt':' pts');
+  document.getElementById('endSub').textContent=sub;
+  const banner=document.getElementById('top10Banner');
+  if(rank>=0&&rank<10){
+    document.getElementById('top10Sub').textContent=I18N[LANG].top10sub(rank);
+    banner.classList.remove('hidden');
+  }else banner.classList.add('hidden');
+  document.getElementById('endScreen').classList.remove('hidden');
+}
+
+function resignAndSave(){
+  document.getElementById('lvlFailScreen').classList.add('hidden');
+  // Punkty z niezaliczonego poziomu zostają — przywróć to, co odjęto w endLevel
+  G.totalScore+=G.lvlScore;
+  endGame();
+}
+
+// ══ UI HELPERS ════════════════════════════════════════════════════════════
+function updateHeader(){
+  const lvl=LEVELS[G.levelIdx];
+  const L=I18N[LANG];
+  document.getElementById('badgeLbl').textContent=L.levelLabels[G.levelIdx]||('Level '+(G.levelIdx+1));
+  document.getElementById('badgeDot').style.background=TIER_COLORS[lvl.tier];
+  document.getElementById('tierDot').style.background=TIER_COLORS[lvl.tier];
+  document.getElementById('tierName').textContent=L.tierNames[lvl.tier]||lvl.tier;
+  updateScoreDisplays();
+}
+function updateScoreDisplays(){
+  document.getElementById('scoreDisplay').textContent=G.lvlScore.toLocaleString('pl');
+  document.getElementById('totalDisplay').textContent=G.totalScore.toLocaleString('pl');
+}
+function updateProgress(){
+  const pct=Math.min(100,G.lvlScore/maxPts()*100);
+  const bar=document.getElementById('progBar');
+  bar.style.width=pct+'%';
+  const tc=TIER_COLORS[LEVELS[G.levelIdx].tier];
+  bar.style.background=pct>=thrPct()?`linear-gradient(90deg,${tc},#a3e0c0)`:'linear-gradient(90deg,#444,#666)';
+  document.getElementById('progScore').textContent=G.lvlScore.toLocaleString('pl');
+  document.getElementById('progMax').textContent=I18N[LANG].maxPtsLabel(maxPts());
+  const t=thrPct();
+  document.getElementById('thrTick').style.left=t+'%';
+  document.getElementById('thrLbl').style.left=t+'%';
+  document.getElementById('thrLbl').textContent=I18N[LANG].thrLabel(t);
+}
+function clearMapLayers(){
+  G.markers.forEach(m=>map.removeLayer(m));G.markers=[];
+  if(G.line){map.removeLayer(G.line);G.line=null;}
+}
+// Inicjalizacja języka
+applyI18n();
+</script>
+</body>
+</html>

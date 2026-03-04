@@ -483,7 +483,8 @@ header {
   <div class="screen-box" style="max-width:560px">
     <div class="screen-title" id="lb_title">🏆 Tablica wyników</div>
     <div class="lb-tabs">
-      <button class="lb-tab selected" id="lbTabWorld" onclick="switchLBTab('world')">🌍 <span id="lb_world">Świat</span></button>
+      <button class="lb-tab selected" id="lbTabGlobal" onclick="switchLBTab('global')">🌐 <span id="lb_global">Globalny</span></button>
+      <button class="lb-tab" id="lbTabWorld" onclick="switchLBTab('world')">🌍 <span id="lb_world">Świat</span></button>
       <button class="lb-tab" id="lbTabEurope" onclick="switchLBTab('europe')">🗺️ <span id="lb_europe">Europa</span></button>
     </div>
     <table class="lb-table">
@@ -634,10 +635,11 @@ const I18N = {
     shareCopied:'Skopiowano!',
     // leaderboard
     lbTitle:'🏆 Tablica wyników',
-    lbWorld:'Świat', lbEurope:'Europa',
+    lbGlobal:'🌐 Globalny', lbWorld:'Świat', lbEurope:'Europa',
     lbDiff:'Poziom', lbScore:'Wynik',
     lbClose:'← Zamknij', lbClear:'🗑 Wyczyść',
     lbEmpty:'Brak wyników — zagraj jako pierwszy!',
+    lbEmptyGlobal:'Brak globalnych wyników — bądź pierwszy!',
     lbConfirmClear:'Wyczyścić tę tablicę wyników?',
     // diff labels
     diffLabels:{easy:'Łatwy', medium:'Średni', hard:'Trudny'},
@@ -707,10 +709,11 @@ Brakło: ${diff.toLocaleString('pl')} pkt
     shareCopied:'Copied!',
     // leaderboard
     lbTitle:'🏆 Leaderboard',
-    lbWorld:'World', lbEurope:'Europe',
+    lbGlobal:'🌐 Global', lbWorld:'World', lbEurope:'Europe',
     lbDiff:'Difficulty', lbScore:'Score',
     lbClose:'← Close', lbClear:'🗑 Clear',
     lbEmpty:'No scores yet — be the first to play!',
+    lbEmptyGlobal:'No global scores yet — be the first!',
     lbConfirmClear:'Clear this leaderboard?',
     // diff labels
     diffLabels:{easy:'Easy', medium:'Medium', hard:'Hard'},
@@ -792,6 +795,7 @@ function applyI18n(){
   st('mo_timeout', L.timeoutTxt);
   // leaderboard
   st('lb_title', L.lbTitle);
+  st('lb_global', L.lbGlobal);
   st('lb_world', L.lbWorld);
   st('lb_europe', L.lbEurope);
   st('lb_diff', L.lbDiff);
@@ -1739,12 +1743,12 @@ function haversine(la1,lo1,la2,lo2){
 }
 
 // ══ LEADERBOARD ═══════════════════════════════════════════════════════════
+// ══ LOCAL LEADERBOARD (localStorage) ════════════════════════════════════════
 const LB_KEY_WORLD='tiqv4_lb_world', LB_KEY_EU='tiqv4_lb_europe';
-let lbActiveTab='world';
 function lbKey(mode){return mode==='europe'?LB_KEY_EU:LB_KEY_WORLD;}
 function loadLB(mode){try{return JSON.parse(localStorage.getItem(lbKey(mode)))||[];}catch{return[];}}
 function saveLB(lb,mode){localStorage.setItem(lbKey(mode),JSON.stringify(lb));}
-function addScore(nick,score,diff,mode){
+function addScoreLocal(nick,score,diff,mode){
   let lb=loadLB(mode);
   lb.push({nick,score,diff});
   lb.sort((a,b)=>b.score-a.score);
@@ -1752,36 +1756,105 @@ function addScore(nick,score,diff,mode){
   saveLB(lb,mode);
   return lb.findIndex(e=>e.nick===nick&&e.score===score);
 }
-function renderLB(hi=-1){
-  const lb=loadLB(lbActiveTab);
-  const body=document.getElementById('lbBody');
-  const dcls={easy:'lb-easy',medium:'lb-med',hard:'lb-hard'};
-  const dlbl=I18N[LANG].diffLabels;
-  if(!lb.length){body.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);font-size:.9rem">${I18N[LANG].lbEmpty}</td></tr>`;return;}
-  body.innerHTML=lb.map((e,i)=>`<tr class="${i===hi?'hl':''}">
+
+// ══ GLOBAL LEADERBOARD (Firebase) ════════════════════════════════════════════
+const FB_LB_REF = 'leaderboard';
+const GLOBAL_LB_LIMIT = 10;
+// Rate limiting: max 1 zapis na 10 sekund per sesja
+let _lastSubmitTime = 0;
+
+function addScoreGlobal(nick, score, diff, mode){
+  if(typeof fbDb === 'undefined') return Promise.resolve(-1);
+  const now = Date.now();
+  if(now - _lastSubmitTime < 10000) return Promise.resolve(-1);
+  _lastSubmitTime = now;
+  // Walidacja po stronie klienta
+  if(!nick || nick.length > 20 || score < 0 || score > 500000) return Promise.resolve(-1);
+  const entry = { nick, score, diff, mode, ts: now };
+  return fbDb.ref(FB_LB_REF).push(entry)
+    .then(() => {
+      // Sprawdź czy wynik jest w top 10
+      return fbDb.ref(FB_LB_REF).orderByChild('score').limitToLast(GLOBAL_LB_LIMIT).once('value');
+    })
+    .then(snap => {
+      const entries = [];
+      snap.forEach(c => entries.push(c.val()));
+      entries.sort((a,b) => b.score - a.score);
+      return entries.findIndex(e => e.nick === nick && e.score === score);
+    })
+    .catch(() => -1);
+}
+
+function addScore(nick, score, diff, mode){
+  const localRank = addScoreLocal(nick, score, diff, mode);
+  addScoreGlobal(nick, score, diff, mode).catch(()=>{});
+  return localRank;
+}
+
+// ══ RENDER LEADERBOARD ════════════════════════════════════════════════════════
+let lbActiveTab = 'global';
+
+function renderLBRows(entries, hi=-1, emptyMsg=''){
+  const body = document.getElementById('lbBody');
+  const dcls = {easy:'lb-easy', medium:'lb-med', hard:'lb-hard'};
+  const dlbl = I18N[LANG].diffLabels;
+  if(!entries.length){
+    body.innerHTML=`<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);font-size:.9rem">${emptyMsg}</td></tr>`;
+    return;
+  }
+  body.innerHTML = entries.map((e,i) => `<tr class="${i===hi?'hl':''}">
     <td class="lb-rank ${i<3?'top3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
     <td class="lb-nick">${e.nick}</td>
     <td><span class="lb-dbadge ${dcls[e.diff]||'lb-easy'}">${dlbl[e.diff]||e.diff}</span></td>
     <td class="lb-score">${e.score.toLocaleString('pl')}</td>
   </tr>`).join('');
 }
+
+function renderLB(hi=-1){
+  const body = document.getElementById('lbBody');
+  if(lbActiveTab === 'global'){
+    if(typeof fbDb === 'undefined'){
+      body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--red);font-size:.9rem">⚠️ Błąd połączenia z Firebase</td></tr>`;
+      return;
+    }
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);font-size:.9rem">⏳ Ładowanie...</td></tr>`;
+    fbDb.ref(FB_LB_REF).orderByChild('score').limitToLast(GLOBAL_LB_LIMIT).once('value')
+      .then(snap => {
+        const entries = [];
+        snap.forEach(c => entries.push(c.val()));
+        entries.sort((a,b) => b.score - a.score);
+        renderLBRows(entries, hi, I18N[LANG].lbEmptyGlobal);
+      })
+      .catch(() => {
+        body.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--red);font-size:.9rem">⚠️ Błąd połączenia</td></tr>`;
+      });
+  } else {
+    const entries = loadLB(lbActiveTab);
+    renderLBRows(entries, hi, I18N[LANG].lbEmpty);
+  }
+}
+
 function switchLBTab(mode){
-  lbActiveTab=mode;
+  lbActiveTab = mode;
+  document.getElementById('lbTabGlobal').classList.toggle('selected', mode==='global');
   document.getElementById('lbTabWorld').classList.toggle('selected', mode==='world');
   document.getElementById('lbTabEurope').classList.toggle('selected', mode==='europe');
   renderLB();
 }
+
 function showLB(hi=-1){
-  // otwórz na zakładce aktualnego trybu gry (lub world domyślnie)
-  const mode = (G && G.mode) ? G.mode : 'world';
-  lbActiveTab=mode;
-  document.getElementById('lbTabWorld').classList.toggle('selected', mode==='world');
-  document.getElementById('lbTabEurope').classList.toggle('selected', mode==='europe');
+  lbActiveTab = 'global';
+  document.getElementById('lbTabGlobal').classList.add('selected');
+  document.getElementById('lbTabWorld').classList.remove('selected');
+  document.getElementById('lbTabEurope').classList.remove('selected');
   renderLB(hi);
   document.getElementById('lbScreen').classList.remove('hidden');
 }
 function hideLB(){document.getElementById('lbScreen').classList.add('hidden');}
-function clearLB(){if(confirm(I18N[LANG].lbConfirmClear)){saveLB([],lbActiveTab);renderLB();}}
+function clearLB(){
+  if(lbActiveTab==='global'){alert('Globalnego rankingu nie można wyczyścić lokalnie.');return;}
+  if(confirm(I18N[LANG].lbConfirmClear)){saveLB([],lbActiveTab);renderLB();}
+}
 
 // ══ THEME ═════════════════════════════════════════════════════════════════
 let dark=true;
@@ -2090,6 +2163,32 @@ function clearMapLayers(){
 }
 // Inicjalizacja języka
 applyI18n();
+</script>
+
+<!-- Firebase — ładowane na końcu żeby nie blokować renderowania -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<script>
+window.addEventListener('load', function() {
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyAAM20XWgGaTN6Y-iSNqkWTFiryo-7xWv0",
+      authDomain: "traveler-challange.firebaseapp.com",
+      databaseURL: "https://traveler-challange-default-rtdb.firebaseio.com",
+      projectId: "traveler-challange",
+      storageBucket: "traveler-challange.firebasestorage.app",
+      messagingSenderId: "725193434382",
+      appId: "1:725193434382:web:3f008f653f07741d0fe35f",
+      measurementId: "G-Y2EBSWMSSF"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window.fbDb = firebase.database();
+    window.fbAnalytics = firebase.analytics();
+  } catch(e) {
+    console.warn('Firebase init failed:', e);
+  }
+});
 </script>
 </body>
 </html>

@@ -763,13 +763,13 @@ header {
     <div class="screen-title" id="lb_title">🏆 Tablica wyników</div>
     <!-- Górne zakładki: Świat / Europa -->
     <div class="lb-tabs">
-      <button class="lb-tab selected" id="lbTabWorld" onclick="switchLBMode('world')">🌍 <span id="lb_world">Świat</span></button>
-      <button class="lb-tab" id="lbTabEurope" onclick="switchLBMode('europe')">🗺️ <span id="lb_europe">Europa</span></button>
+      <button class="lb-tab selected" id="lbTabWorld" onclick="switchLBMode('world')"><span id="lb_world">🌍 Świat</span></button>
+      <button class="lb-tab" id="lbTabEurope" onclick="switchLBMode('europe')"><span id="lb_europe">🗺️ Europa</span></button>
     </div>
     <!-- Dolne podzakładki: Globalne / Twoje -->
     <div class="lb-subtabs">
-      <button class="lb-subtab selected" id="lbSubGlobal" onclick="switchLBSub('global')">🌐 <span id="lb_global">Globalne</span></button>
-      <button class="lb-subtab" id="lbSubLocal" onclick="switchLBSub('local')">👤 <span id="lb_yours">Twoje</span></button>
+      <button class="lb-subtab selected" id="lbSubGlobal" onclick="switchLBSub('global')"><span id="lb_global">🌐 Globalne</span></button>
+      <button class="lb-subtab" id="lbSubLocal" onclick="switchLBSub('local')"><span id="lb_yours">👤 Twoje</span></button>
     </div>
     <table class="lb-table">
       <thead><tr><th>#</th><th>Nick</th><th id="lb_diff">Poziom</th><th style="text-align:right" id="lb_score">Wynik</th></tr></thead>
@@ -825,8 +825,8 @@ header {
 
 <!-- Dropdown menu -->
 <div class="mobile-dropdown" id="mobileDropdown">
-  <button class="mobile-dd-item" onclick="showLB();closeMobileMenu()">🏆 <span id="m_lbBtn">Tablica wyników</span></button>
-  <button class="mobile-dd-item" onclick="toggleTheme();closeMobileMenu()" id="m_themeBtn">☀️ <span id="m_themeLbl">Jasny motyw</span></button>
+  <button class="mobile-dd-item" onclick="showLB();closeMobileMenu()"><span id="m_lbBtn">🏆 Tablica wyników</span></button>
+  <button class="mobile-dd-item" onclick="toggleTheme();closeMobileMenu()" id="m_themeBtn"><span id="m_themeLbl">☀️ Jasny motyw</span></button>
   <div class="mobile-dd-sep"></div>
   <button class="mobile-dd-item danger" onclick="confirmRestart();closeMobileMenu()">↺ <span id="m_restart">Restart</span></button>
   <button class="mobile-dd-item danger" onclick="goToStart();closeMobileMenu()">✕ <span id="m_mainMenu">Menu główne</span></button>
@@ -971,7 +971,7 @@ const I18N = {
     // leaderboard
     lbTitle:'🏆 Tablica wyników',
     lbGlobal:'🌐 Globalne', lbYours:'👤 Twoje',
-    lbWorld:'Świat', lbEurope:'Europa',
+    lbWorld:'🌍 Świat', lbEurope:'🗺️ Europa',
     lbDiff:'Poziom', lbScore:'Wynik',
     lbClose:'← Zamknij', lbClear:'🗑 Wyczyść',
     lbEmpty:'Brak wyników — zagraj jako pierwszy!',
@@ -1046,7 +1046,7 @@ Brakło: ${diff.toLocaleString('pl')} pkt
     // leaderboard
     lbTitle:'🏆 Leaderboard',
     lbGlobal:'🌐 Global', lbYours:'👤 Yours',
-    lbWorld:'World', lbEurope:'Europe',
+    lbWorld:'🌍 World', lbEurope:'🗺️ Europe',
     lbDiff:'Difficulty', lbScore:'Score',
     lbClose:'← Close', lbClear:'🗑 Clear',
     lbEmpty:'No scores yet — be the first to play!',

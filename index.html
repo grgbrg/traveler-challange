@@ -442,6 +442,7 @@ header {
     z-index:1000;
     flex-shrink:0;
     padding-top:env(safe-area-inset-top, 0px);
+    overflow:visible;
   }
 
   .mobile-topbar {
@@ -450,6 +451,8 @@ header {
     height:52px;
     padding:0 10px;
     gap:8px;
+    position:relative;
+    overflow:visible;
   }
 
   /* Menu button */
@@ -474,19 +477,22 @@ header {
   }
   .mobile-menu-btn.open .mobile-menu-line { background:var(--gold); }
 
-  /* Stats w środku */
+  /* Stats — wyrównane do lewej, nie nachodzą na baner */
   .mobile-stats {
     flex:1;
     display:flex;
     align-items:center;
-    justify-content:center;
-    gap:8px;
+    justify-content:flex-start;
+    gap:6px;
+    padding-right:145px; /* szerokość banera miasta */
+    overflow:hidden;
   }
   .mobile-stat {
     display:flex;
     flex-direction:column;
     align-items:center;
-    min-width:40px;
+    min-width:36px;
+    flex-shrink:0;
   }
   .mobile-stat-val {
     font-family:'Playfair Display',serif;
@@ -503,6 +509,8 @@ header {
     font-weight:700;
     margin-top:1px;
   }
+  .m_topass-val { transition:color .3s; }
+
   .mobile-sep {
     width:1px; height:22px;
     background:var(--border);
@@ -518,38 +526,50 @@ header {
     line-height:1;
   }
 
-  /* City — po prawej */
+  /* City — powiększony baner po prawej */
   .mobile-city {
     display:flex !important;
     flex-direction:column;
-    align-items:flex-end;
+    align-items:flex-start;
     justify-content:center;
     flex-shrink:0;
-    max-width:38%;
+    position:absolute;
+    top:0;
+    right:0;
+    bottom:0;
+    width:140px;
+    background:var(--panel2);
+    border-left:1.5px solid var(--gold);
+    border-radius:0 0 0 12px;
+    padding:5px 10px 5px 12px;
+    z-index:10;
   }
   .mobile-city-prompt {
-    font-size:.45rem;
+    font-size:.48rem;
     color:var(--muted);
     text-transform:uppercase;
     letter-spacing:.18em;
     font-weight:700;
     line-height:1;
+    margin-bottom:3px;
   }
   .mobile-city-name {
     font-family:'Playfair Display',serif;
     font-weight:900;
     color:var(--gold-light);
     line-height:1.1;
-    white-space:nowrap;
-    font-size:1rem;
-    text-align:right;
+    white-space:normal;
+    word-break:break-word;
+    font-size:1.15rem;
+    text-align:left;
   }
   .mobile-city-country {
-    font-size:.58rem;
+    font-size:.62rem;
     color:var(--muted);
     font-weight:600;
     white-space:nowrap;
-    text-align:right;
+    text-align:left;
+    margin-top:2px;
   }
 
   /* Pasek postępu */
@@ -638,9 +658,135 @@ header {
   .diff-opt, .mode-opt { padding:8px 5px; }
 }
 
-/* Ukryj mobile elementy na desktop */
+/* start-left i start-right — na desktop/portrait jako zwykłe bloki */
+.start-left { display:block; width:100%; }
+.start-right { display:block; width:100%; }
+.start-form-options { display:block; }
 .mobile-header { display:none; }
 .mobile-dropdown { display:none; }
+.landscape-menu-btn { display:none; }
+
+/* ══ LANDSCAPE MOBILE — dwie kolumny ══════════════════════════════════════ */
+@media (max-width: 926px) and (orientation: landscape) {
+
+  /* Rozgrywka — desktop layout */
+  header { display:flex !important; height:52px; padding:0 16px; }
+  .hdr-btns { display:none !important; }
+  .sidebar { display:flex !important; width:260px; padding:10px 10px; gap:8px; }
+  .mobile-header { display:none !important; }
+  body { padding-top:0; }
+  .game-area { flex-direction:row; }
+  #map { flex:1; width:auto; }
+
+  /* Hamburger po lewej w landscape */
+  .landscape-menu-btn {
+    display:flex !important;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    width:34px; height:34px;
+    border-radius:9px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    cursor:pointer;
+    flex-shrink:0;
+    margin-right:4px;
+  }
+  .landscape-menu-btn.open .mobile-menu-line { background:var(--gold); }
+
+  /* Kompaktowe elementy na małym ekranie landscape */
+  .logo { font-size:1.1rem; }
+  .hstat-val { font-size:1.4rem; }
+  .hstat-lbl { font-size:.55rem; }
+  .hstat-sep { height:28px; }
+  .timer-val { font-size:1.6rem; }
+  .timer-bar-bg { width:80px; height:7px; }
+  .timer-lbl-sm { font-size:.5rem; }
+  .lvl-badge { padding:4px 10px; gap:6px; }
+  .badge-lbl { font-size:.75rem; }
+  .badge-dot { width:8px; height:8px; }
+  .diff-badge { font-size:.65rem; padding:3px 8px; }
+  .city-name { font-size:1.8rem; }
+  .city-country { font-size:1rem; }
+  .city-card { padding:14px 12px 12px; }
+  .progress-wrap { padding:8px 10px; }
+
+  /* Baner wyniku — nie zasłania sidebaru */
+  #mapOverlay { left:calc(50% - 130px); transform:translateX(-50%); max-width:calc(100vw - 260px - 40px); }
+  .mo-dist-val { font-size:1.8rem; }
+  .mo-pts-val  { font-size:1.8rem; }
+  .mo-sep      { height:40px; }
+  .mo-box      { padding:14px 20px; gap:16px; }
+  .mo-btn      { padding:10px 16px; font-size:.88rem; }
+
+  #startScreen { overflow:hidden; padding:0; align-items:stretch; max-width:100vw; }
+
+  #startScreen .screen-box {
+    max-width:100vw !important;
+    width:100%;
+    height:100vh;
+    padding:0;
+    gap:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    border:none;
+    position:relative;
+    overflow:hidden;
+  }
+
+  #startScreen .top-row {
+    padding:5px 16px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel);
+    margin-bottom:0;
+    flex-shrink:0;
+  }
+
+  .start-left, .start-right { display:flex !important; }
+
+  .start-left {
+    position:absolute;
+    top:calc(36px + 1px);
+    left:0;
+    width:40%;
+    bottom:0;
+    border-right:1px solid var(--border);
+    padding:14px 20px;
+    flex-direction:column;
+    justify-content:center;
+    gap:10px;
+    overflow:hidden;
+    box-sizing:border-box;
+  }
+
+  .start-right {
+    position:absolute;
+    top:calc(36px + 1px);
+    left:40%;
+    right:0;
+    bottom:0;
+    padding:12px 16px;
+    flex-direction:column;
+    gap:8px;
+    overflow:hidden;
+    box-sizing:border-box;
+    width:60%;
+  }
+
+  .start-logo { font-size:1.5rem; margin-bottom:0; text-align:center; }
+  .start-tagline { display:none; }
+  .start-form { margin-bottom:0; gap:6px; }
+  .start-form-options { display:flex !important; flex-direction:column; gap:8px; flex:1; min-width:0; overflow:hidden; }
+  .start-rules { font-size:.7rem; line-height:1.5; margin-bottom:0; flex:1; min-width:0; overflow-y:auto; }
+  .start-btns { margin-top:auto; flex-direction:row; gap:8px; }
+  #startScreen .btn-screen { flex:1; padding:9px; font-size:.85rem; }
+
+  .diff-opt-info { display:none !important; }
+  .diff-opt, .mode-opt { padding:7px 5px; }
+  .nick-input { padding:8px 12px; font-size:.85rem; }
+}
 </style>
 
 <!-- Firebase z defer — ładuje się równolegle, nie blokuje renderowania -->
@@ -662,51 +808,62 @@ header {
         <button class="btn-hdr" onclick="toggleTheme()" id="themeBtn">☀️ Jasny motyw</button>
       </div>
     </div>
-    <div class="start-logo">Traveler Challenge</div>
-    <div class="start-tagline" id="s_tagline">Sprawdź, czy znasz miasta świata</div>
-    <div class="start-form">
-      <div class="input-group">
-        <label class="input-lbl" for="nickInput" id="s_nickLbl">Twój nick</label>
-        <input class="nick-input" id="nickInput" type="text" placeholder="Wpisz nick..." maxlength="20" autocomplete="off" required>
-      </div>
-      <div class="input-group">
-        <label class="input-lbl" id="s_modeLbl">Tryb gry</label>
-        <div class="diff-selector" style="margin-bottom:10px">
-          <div class="mode-opt selected" data-mode="world" onclick="selectMode(this)">
-            <div class="diff-opt-name" style="color:var(--text2)">🌍 <span id="s_modeWorld">Świat</span></div>
-            <div class="diff-opt-info" id="s_modeWorldInfo">Miasta całego świata</div>
-          </div>
-          <div class="mode-opt" data-mode="europe" onclick="selectMode(this)">
-            <div class="diff-opt-name" style="color:var(--gold)">🗺️ <span id="s_modeEurope">Europa</span></div>
-            <div class="diff-opt-info" id="s_modeEuropeInfo">Miasta Europy</div>
-          </div>
-        </div>
-        <label class="input-lbl" id="s_diffLbl">Poziom trudności</label>
-        <div class="diff-selector">
-          <div class="diff-opt selected" data-diff="easy" onclick="selectDiff(this)">
-            <div class="diff-opt-name" style="color:var(--green)" id="s_easy">Łatwy</div>
-            <div class="diff-opt-info" id="s_easyInfo">Widoczne kraje.<br>Stały próg zaliczenia.</div>
-          </div>
-          <div class="diff-opt" data-diff="medium" onclick="selectDiff(this)">
-            <div class="diff-opt-name" style="color:var(--gold)" id="s_medium">Średni</div>
-            <div class="diff-opt-info" id="s_mediumInfo">Widoczne kraje.<br>Malejący próg.<br><strong>Więcej punktów!</strong></div>
-          </div>
-          <div class="diff-opt" data-diff="hard" onclick="selectDiff(this)">
-            <div class="diff-opt-name" style="color:var(--red)" id="s_hard">Trudny</div>
-            <div class="diff-opt-info" id="s_hardInfo">Bez krajów.<br>Malejący próg.<br>Jeszcze więcej punktów!</div>
-          </div>
+
+    <!-- LEWA: logo + nick -->
+    <div class="start-left">
+      <div class="start-logo">Traveler Challenge</div>
+      <div class="start-tagline" id="s_tagline">Sprawdź, czy znasz miasta świata</div>
+      <div class="start-form">
+        <div class="input-group">
+          <label class="input-lbl" for="nickInput" id="s_nickLbl">Twój nick</label>
+          <input class="nick-input" id="nickInput" type="text" placeholder="Wpisz nick..." maxlength="20" autocomplete="off" required>
         </div>
       </div>
     </div>
-    <div class="start-rules" id="s_rules">
-      <strong>Wskaż miasto na mapie zanim upłynie czas.</strong><br>
-      Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>
-      Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.
+
+    <!-- PRAWA: tryb + poziom + zasady + przyciski -->
+    <div class="start-right">
+      <div class="start-form-options">
+        <div class="input-group">
+          <label class="input-lbl" id="s_modeLbl">Tryb gry</label>
+          <div class="diff-selector" style="margin-bottom:10px">
+            <div class="mode-opt selected" data-mode="world" onclick="selectMode(this)">
+              <div class="diff-opt-name" style="color:var(--text2)">🌍 <span id="s_modeWorld">Świat</span></div>
+              <div class="diff-opt-info" id="s_modeWorldInfo">Miasta całego świata</div>
+            </div>
+            <div class="mode-opt" data-mode="europe" onclick="selectMode(this)">
+              <div class="diff-opt-name" style="color:var(--gold)">🗺️ <span id="s_modeEurope">Europa</span></div>
+              <div class="diff-opt-info" id="s_modeEuropeInfo">Miasta Europy</div>
+            </div>
+          </div>
+          <label class="input-lbl" id="s_diffLbl">Poziom trudności</label>
+          <div class="diff-selector">
+            <div class="diff-opt selected" data-diff="easy" onclick="selectDiff(this)">
+              <div class="diff-opt-name" style="color:var(--green)" id="s_easy">Łatwy</div>
+              <div class="diff-opt-info" id="s_easyInfo">Widoczne kraje.<br>Stały próg zaliczenia.</div>
+            </div>
+            <div class="diff-opt" data-diff="medium" onclick="selectDiff(this)">
+              <div class="diff-opt-name" style="color:var(--gold)" id="s_medium">Średni</div>
+              <div class="diff-opt-info" id="s_mediumInfo">Widoczne kraje.<br>Malejący próg.<br><strong>Więcej punktów!</strong></div>
+            </div>
+            <div class="diff-opt" data-diff="hard" onclick="selectDiff(this)">
+              <div class="diff-opt-name" style="color:var(--red)" id="s_hard">Trudny</div>
+              <div class="diff-opt-info" id="s_hardInfo">Bez krajów.<br>Malejący próg.<br>Jeszcze więcej punktów!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="start-rules" id="s_rules">
+        <strong>Wskaż miasto na mapie zanim upłynie czas.</strong><br>
+        Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>
+        Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.
+      </div>
+      <div class="start-btns">
+        <button class="btn-screen" onclick="startGame()" id="s_startBtn">Rozpocznij podróż →</button>
+        <button class="btn-screen sec" onclick="showLB()" id="s_lbBtn">🏆 Tablica wyników</button>
+      </div>
     </div>
-    <div class="start-btns">
-      <button class="btn-screen" onclick="startGame()" id="s_startBtn">Rozpocznij podróż →</button>
-      <button class="btn-screen sec" onclick="showLB()" id="s_lbBtn">🏆 Tablica wyników</button>
-    </div>
+
   </div>
 </div>
 
@@ -804,6 +961,11 @@ header {
       </div>
       <div class="mobile-sep"></div>
       <div class="mobile-stat">
+        <div class="mobile-stat-val m_topass-val" id="m_toPass">–</div>
+        <div class="mobile-stat-lbl" id="m_toPassLbl">do progu</div>
+      </div>
+      <div class="mobile-sep"></div>
+      <div class="mobile-stat">
         <div class="mobile-timer-val" id="m_timerVal">15</div>
         <div class="mobile-stat-lbl" id="m_secLbl">sekund</div>
       </div>
@@ -833,6 +995,11 @@ header {
 </div>
 
 <header>
+  <div class="landscape-menu-btn" id="landscapeMenuBtn" onclick="toggleMobileMenu()">
+    <div class="mobile-menu-line"></div>
+    <div class="mobile-menu-line"></div>
+    <div class="mobile-menu-line"></div>
+  </div>
   <div class="logo" onclick="goToStart()" style="cursor:pointer" title="Menu główne" id="logoTitle">Traveler <em>Challenge</em></div>
 
   <div class="header-stats">
@@ -1167,6 +1334,7 @@ function applyI18n(){
   st('m_findLbl', L.findCity || 'Znajdź');
   st('m_restart', L.restart  || 'Restart');
   st('m_mainMenu', LANG==='pl' ? 'Menu główne' : 'Main Menu');
+  st('m_toPassLbl', LANG==='pl' ? 'do progu' : 'to pass');
   const mThemeLbl = document.getElementById('m_themeLbl');
   if(mThemeLbl) mThemeLbl.textContent = dark_now ? L.themeLight : L.themeDark;
   const mLb = document.getElementById('m_lbBtn');
@@ -2220,6 +2388,8 @@ function toggleTheme(){
   const L=I18N[LANG];
   document.getElementById('themeBtn').textContent=dark?L.themeLight:L.themeDark;
   document.getElementById('themeBtnHdr').textContent=dark?'☀️':'🌙';
+  const mThemeLbl=document.getElementById('m_themeLbl');
+  if(mThemeLbl) mThemeLbl.textContent=dark?L.themeLight:L.themeDark;
   if(typeof tileLayer!=='undefined') tileLayer.setUrl(dark?TILE_DARK:TILE_LIGHT);
 }
 function selectMode(el){
@@ -2523,6 +2693,19 @@ function updateProgress(){
   document.getElementById('thrTick').style.left=t+'%';
   document.getElementById('thrLbl').style.left=t+'%';
   document.getElementById('thrLbl').textContent=I18N[LANG].thrLabel(t);
+  // mobile: punkty do progu
+  const mToPass=document.getElementById('m_toPass');
+  if(mToPass){
+    const needed=Math.ceil(thrPct()/100*maxPts());
+    const remaining=needed-G.lvlScore;
+    if(remaining<=0){
+      mToPass.textContent='✓';
+      mToPass.style.color='var(--green)';
+    } else {
+      mToPass.textContent=remaining.toLocaleString('pl');
+      mToPass.style.color='var(--gold-light)';
+    }
+  }
 }
 function clearMapLayers(){
   G.markers.forEach(m=>map.removeLayer(m));G.markers=[];
@@ -2538,7 +2721,7 @@ function syncMobileHeader(){
   if(mName){
     mName.textContent = name;
     const len = name.length;
-    mName.style.fontSize = len <= 8 ? '1rem' : len <= 14 ? '.82rem' : '.65rem';
+    mName.style.fontSize = len <= 8 ? '1.15rem' : len <= 14 ? '.95rem' : '.75rem';
   }
   const hideCountry = !G.diffCfg.showCountry || (G.levelIdx>=9);
   const mCountry = document.getElementById('m_cityCountry');
@@ -2549,20 +2732,29 @@ function syncMobileHeader(){
 
 function toggleMobileMenu(){
   const dd = document.getElementById('mobileDropdown');
-  const btn = document.getElementById('mobileMenuBtn');
   const open = dd.classList.toggle('open');
-  btn.classList.toggle('open', open);
+  const btn1 = document.getElementById('mobileMenuBtn');
+  const btn2 = document.getElementById('landscapeMenuBtn');
+  if(btn1) btn1.classList.toggle('open', open);
+  if(btn2) btn2.classList.toggle('open', open);
 }
 
 function closeMobileMenu(){
   document.getElementById('mobileDropdown').classList.remove('open');
-  document.getElementById('mobileMenuBtn').classList.remove('open');
+  const btn1 = document.getElementById('mobileMenuBtn');
+  const btn2 = document.getElementById('landscapeMenuBtn');
+  if(btn1) btn1.classList.remove('open');
+  if(btn2) btn2.classList.remove('open');
 }
 
 document.addEventListener('click', function(e){
   const dd = document.getElementById('mobileDropdown');
-  const btn = document.getElementById('mobileMenuBtn');
-  if(dd && dd.classList.contains('open') && !dd.contains(e.target) && !btn.contains(e.target)){
+  const btn1 = document.getElementById('mobileMenuBtn');
+  const btn2 = document.getElementById('landscapeMenuBtn');
+  if(dd && dd.classList.contains('open')
+     && !dd.contains(e.target)
+     && !(btn1 && btn1.contains(e.target))
+     && !(btn2 && btn2.contains(e.target))){
     closeMobileMenu();
   }
 });

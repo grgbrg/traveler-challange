@@ -256,7 +256,7 @@ header {
   margin-left:10px; font-weight:500;
 }
 .btn-screen.sec:hover { border-color:var(--muted); color:var(--muted2); transform:none; }
-[data-theme="light"] .btn-screen.sec:hover { border-color:var(--gold); color:var(--green-light); }
+[data-theme="light"] .btn-screen.sec:hover { border-color:var(--gold); color:var(--gold); }
 .overlay-pass { border-color:var(--green)!important; }
 .overlay-fail { border-color:var(--red)!important; }
 .pass-title { color:var(--green)!important; }
@@ -311,6 +311,7 @@ header {
 }
 .start-rules strong { color:var(--text2); }
 .theme-row { display:flex; justify-content:flex-end; margin-bottom:14px; }
+.top-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
 
 /* ══════════════════════════════════════════════════════
    LEADERBOARD
@@ -423,6 +424,8 @@ header {
   .start-logo { margin-bottom:2px; }
   .start-tagline { margin-bottom:8px; }
   .start-rules { margin-bottom:8px; font-size:.8rem; line-height:1.5; }
+
+
 
   /* Mobile header */
   .mobile-header {
@@ -615,6 +618,15 @@ header {
   .mo-btn       { padding:10px 14px; font-size:.88rem; }
 }
 
+/* Małe ekrany (iPhone 13 mini i mniejsze) */
+@media (max-width: 926px) and (max-height: 820px) {
+  .diff-opt-info { display:none !important; }
+  .start-logo { font-size:1.5rem; }
+  .start-tagline { display:none; }
+  .start-rules { font-size:.72rem; }
+  .diff-opt, .mode-opt { padding:8px 5px; }
+}
+
 /* Ukryj mobile elementy na desktop */
 .mobile-header { display:none; }
 .mobile-dropdown { display:none; }
@@ -630,12 +642,14 @@ header {
 <!-- ══ START ══════════════════════════════════════════════════════════════ -->
 <div class="screen" id="startScreen">
   <div class="screen-box" style="max-width:550px">
-    <div class="lang-row">
-      <button class="lang-btn active" id="langBtnPL" onclick="setLang('pl')">🇵🇱 PL</button>
-      <button class="lang-btn" id="langBtnEN" onclick="setLang('en')">🇬🇧 EN</button>
-    </div>
-    <div class="theme-row">
-      <button class="btn-hdr" onclick="toggleTheme()" id="themeBtn">☀️ Jasny motyw</button>
+    <div class="top-row">
+      <div class="lang-row" style="margin-bottom:0">
+        <button class="lang-btn active" id="langBtnPL" onclick="setLang('pl')">🇵🇱 PL</button>
+        <button class="lang-btn" id="langBtnEN" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+      <div class="theme-row" style="margin-bottom:0">
+        <button class="btn-hdr" onclick="toggleTheme()" id="themeBtn">☀️ Jasny motyw</button>
+      </div>
     </div>
     <div class="start-logo">Traveler Challenge</div>
     <div class="start-tagline" id="s_tagline">Sprawdź, czy znasz miasta świata</div>
@@ -1133,6 +1147,17 @@ function applyI18n(){
   const tbh = document.getElementById('themeBtnHdr');
   if(tb) tb.textContent = dark_now ? L.themeLight : L.themeDark;
   if(tbh) tbh.textContent = dark_now ? '☀️' : '🌙';
+  // mobile i18n
+  st('m_qLbl',    L.qLbl    || 'Pytanie');
+  st('m_lvlLbl',  L.lvlLbl  || 'Poziom');
+  st('m_secLbl',  L.secLbl  || 'sekund');
+  st('m_findLbl', L.findCity || 'Znajdź');
+  st('m_restart', L.restart  || 'Restart');
+  st('m_mainMenu', LANG==='pl' ? 'Menu główne' : 'Main Menu');
+  const mThemeLbl = document.getElementById('m_themeLbl');
+  if(mThemeLbl) mThemeLbl.textContent = dark_now ? L.themeLight : L.themeDark;
+  const mLb = document.getElementById('m_lbBtn');
+  if(mLb) mLb.textContent = L.lbBtn || '🏆 Wyniki';
   // re-render lb if open
   if(!document.getElementById('lbScreen').classList.contains('hidden')) renderLB();
 }
@@ -2528,25 +2553,6 @@ document.addEventListener('click', function(e){
     closeMobileMenu();
   }
 });
-
-// Wrap applyI18n żeby aktualizować też mobile elementy
-const _origApplyI18n = applyI18n;
-applyI18n = function(){
-  _origApplyI18n();
-  const L = I18N[LANG];
-  const st = (id, txt) => { const el=document.getElementById(id); if(el) el.textContent=txt; };
-  st('m_qLbl',    L.qLbl    || 'Pytanie');
-  st('m_lvlLbl',  L.lvlLbl  || 'Poziom');
-  st('m_secLbl',  L.secLbl  || 'sekund');
-  st('m_findLbl', L.findCity  || 'Znajdź');
-  st('m_restart', L.restart   || 'Restart');
-  st('m_mainMenu', LANG==='pl' ? 'Menu główne' : 'Main Menu');
-  const themeLbl = document.getElementById('m_themeLbl');
-  if(themeLbl) themeLbl.textContent = document.documentElement.getAttribute('data-theme')==='dark'
-    ? (L.lightTheme || 'Jasny motyw') : (L.darkTheme || 'Ciemny motyw');
-  const mLb = document.getElementById('m_lbBtn');
-  if(mLb) mLb.textContent = L.lbBtn || '🏆 Wyniki';
-};
 
 // Inicjalizacja języka
 applyI18n();

@@ -672,7 +672,20 @@ header {
   /* Rozgrywka — desktop layout */
   header { display:flex !important; height:52px; padding:0 16px; }
   .hdr-btns { display:none !important; }
-  .sidebar { display:flex !important; width:260px; padding:10px 10px; gap:8px; }
+  .sidebar {
+    display:flex !important;
+    width:230px;
+    padding:6px 8px;
+    gap:5px;
+    height:100%;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
+  .sidebar > * { flex-shrink:1; min-height:0; }
+  .city-card { flex:1 !important; display:flex !important; flex-direction:column; justify-content:center; overflow:hidden; min-height:0; }
+  .progress-wrap { flex-shrink:0; }
+  .tier-row { flex-shrink:0; }
+
   .mobile-header { display:none !important; }
   body { padding-top:0; }
   .game-area { flex-direction:row; }
@@ -707,13 +720,22 @@ header {
   .badge-lbl { font-size:.75rem; }
   .badge-dot { width:8px; height:8px; }
   .diff-badge { font-size:.65rem; padding:3px 8px; }
-  .city-name { font-size:1.8rem; }
-  .city-country { font-size:1rem; }
-  .city-card { padding:14px 12px 12px; }
-  .progress-wrap { padding:8px 10px; }
+  .city-name { font-size:1.5rem; margin-bottom:4px; }
+  .city-country { font-size:.9rem; min-height:auto; }
+  .city-prompt { font-size:.52rem; margin-bottom:5px; }
+  .city-divider { margin:0 auto 6px; }
+  .city-card { padding:8px 10px; }
+  .progress-wrap { padding:6px 8px; }
+  .prog-score { font-size:.95rem; }
+  .prog-bg { height:8px; }
+  .prog-thr-row { height:14px; }
+  .prog-max { font-size:.58rem; margin-top:2px; }
+  .tier-row { padding:5px 8px; }
+  .tier-name { font-size:.75rem; }
+  .tier-q { font-size:.7rem; }
 
   /* Baner wyniku — nie zasłania sidebaru */
-  #mapOverlay { left:calc(50% - 130px); transform:translateX(-50%); max-width:calc(100vw - 260px - 40px); }
+  #mapOverlay { left:calc(50% - 115px); transform:translateX(-50%); max-width:calc(100vw - 230px - 40px); }
   .mo-dist-val { font-size:1.8rem; }
   .mo-pts-val  { font-size:1.8rem; }
   .mo-sep      { height:40px; }

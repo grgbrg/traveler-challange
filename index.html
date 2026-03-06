@@ -389,6 +389,7 @@ header {
 
   /* Ukryj desktop header i sidebar */
   header { display:none !important; }
+  .hdr-btns { display:none !important; }
   .sidebar { display:none !important; }
 
   /* Layout — mapa fullscreen pod mobile headerem */
@@ -532,16 +533,18 @@ header {
   /* Dropdown menu */
   .mobile-dropdown {
     display:none;
-    position:absolute;
-    top:calc(52px + env(safe-area-inset-top, 0px) + 3px);
+    position:fixed;
+    top:calc(52px + env(safe-area-inset-top, 44px) + 6px);
     left:10px;
-    width:190px;
+    width:200px;
     background:var(--panel);
     border:1px solid var(--border);
     border-radius:12px;
     padding:6px;
-    z-index:2000;
+    z-index:3000;
     box-shadow:0 8px 24px rgba(0,0,0,.4);
+    max-height:calc(100vh - 120px);
+    overflow-y:auto;
   }
   .mobile-dropdown.open { display:block; }
   .mobile-dd-item {

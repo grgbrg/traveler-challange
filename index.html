@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl" data-lang="pl" data-theme="dark">
+<html lang="en" data-lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -219,6 +219,12 @@ header {
 /* Max points display */
 .prog-max { font-size:.68rem; color:var(--muted2); margin-top:4px; text-align:right; }
 
+/* To-pass sidebar widget — landscape only */
+.topass-wrap { display:none; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:6px 10px; text-align:center; }
+.topass-lbl { font-size:.58rem; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; font-weight:700; margin-bottom:2px; }
+.topass-val { font-family:'Playfair Display',serif; font-size:1.5rem; font-weight:700; color:var(--gold-light); line-height:1; transition:color .3s; }
+
 /* Tier info */
 .tier-row { display:flex; align-items:center; justify-content:space-between; padding:9px 12px; background:var(--panel2); border:1px solid var(--border); border-radius:10px; }
 .tier-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
@@ -262,7 +268,53 @@ header {
 .start-btns .btn-screen.sec { width:100%; margin-left:0; }
 .btn-screen.sec:hover { border-color:var(--muted); color:var(--muted2); transform:none; }
 [data-theme="light"] .btn-screen.sec:hover { border-color:var(--gold); color:var(--gold); }
+.fail-btns-row { display:block; }
 .overlay-pass { border-color:var(--green)!important; }
+
+/* ── Hamburger lines + dropdown — używane w portrait i landscape ── */
+.mobile-menu-line {
+  width:16px; height:2px;
+  background:var(--muted);
+  border-radius:2px;
+  transition:background .2s;
+}
+.mobile-menu-btn.open .mobile-menu-line,
+.landscape-menu-btn.open .mobile-menu-line { background:var(--gold); }
+.mobile-dropdown {
+  display:none;
+  position:fixed;
+  top:calc(52px + env(safe-area-inset-top, 0px) + 6px);
+  left:10px;
+  width:200px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:6px;
+  z-index:3000;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);
+  max-height:calc(100vh - 120px);
+  overflow-y:auto;
+}
+.mobile-dropdown.open { display:block; }
+.mobile-dd-item {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:8px;
+  color:var(--text2);
+  font-size:.88rem;
+  font-weight:600;
+  cursor:pointer;
+  border:none;
+  background:none;
+  width:100%;
+  text-align:left;
+  font-family:'DM Sans',sans-serif;
+}
+.mobile-dd-item:hover { background:var(--panel2); }
+.mobile-dd-item.danger { color:var(--red); }
+.mobile-dd-sep { height:1px; background:var(--border); margin:4px 0; }
 .overlay-fail { border-color:var(--red)!important; }
 .pass-title { color:var(--green)!important; }
 .fail-title { color:var(--red)!important; }
@@ -391,7 +443,7 @@ header {
 .share-copy { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
 .share-copy:hover { border-color:var(--gold); color:var(--gold); }
 /* ══ MOBILE (max 767px) ════════════════════════════════════════════════════ */
-@media (max-width: 926px) and (max-height: 926px) {
+@media (max-width: 926px) and (max-height: 926px) and (orientation: portrait) {
 
   /* Ukryj desktop header i sidebar */
   header { display:none !important; }
@@ -469,13 +521,7 @@ header {
     cursor:pointer;
     flex-shrink:0;
   }
-  .mobile-menu-line {
-    width:16px; height:2px;
-    background:var(--muted);
-    border-radius:2px;
-    transition:background .2s;
-  }
-  .mobile-menu-btn.open .mobile-menu-line { background:var(--gold); }
+
 
   /* Stats — wyrównane do lewej, nie nachodzą na baner */
   .mobile-stats {
@@ -585,42 +631,7 @@ header {
     transition:width .4s ease;
   }
 
-  /* Dropdown menu */
-  .mobile-dropdown {
-    display:none;
-    position:fixed;
-    top:calc(52px + env(safe-area-inset-top, 44px) + 6px);
-    left:10px;
-    width:200px;
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:6px;
-    z-index:3000;
-    box-shadow:0 8px 24px rgba(0,0,0,.4);
-    max-height:calc(100vh - 120px);
-    overflow-y:auto;
-  }
-  .mobile-dropdown.open { display:block; }
-  .mobile-dd-item {
-    display:flex;
-    align-items:center;
-    gap:10px;
-    padding:10px 12px;
-    border-radius:8px;
-    color:var(--text2);
-    font-size:.88rem;
-    font-weight:600;
-    cursor:pointer;
-    border:none;
-    background:none;
-    width:100%;
-    text-align:left;
-    font-family:'DM Sans',sans-serif;
-  }
-  .mobile-dd-item:hover { background:var(--panel2); }
-  .mobile-dd-item.danger { color:var(--red); }
-  .mobile-dd-sep { height:1px; background:var(--border); margin:4px 0; }
+
 
   /* Map overlay na mobile */
   #mapOverlay {
@@ -644,13 +655,13 @@ header {
 }
 
 /* Średnie małe ekrany — najpierw zmniejsz logo */
-@media (max-width: 926px) and (max-height: 820px) {
+@media (max-width: 926px) and (max-height: 820px) and (orientation: portrait) {
   .start-logo { font-size:1.8rem; }
   .start-tagline { font-size:.78rem; margin-bottom:6px; }
 }
 
 /* Bardzo małe ekrany — ukryj opisy poziomów */
-@media (max-width: 926px) and (max-height: 700px) {
+@media (max-width: 926px) and (max-height: 700px) and (orientation: portrait) {
   .diff-opt-info { display:none !important; }
   .start-logo { font-size:1.5rem; }
   .start-tagline { display:none; }
@@ -682,9 +693,10 @@ header {
     overflow:hidden;
   }
   .sidebar > * { flex-shrink:1; min-height:0; }
-  .city-card { flex:1 !important; display:flex !important; flex-direction:column; justify-content:center; overflow:hidden; min-height:0; }
-  .progress-wrap { flex-shrink:0; }
-  .tier-row { flex-shrink:0; }
+  .city-card { flex:2 !important; display:flex !important; flex-direction:column; justify-content:center; min-height:0; overflow:visible; }
+  .progress-wrap { display:none !important; }
+  .topass-wrap { display:flex !important; flex-shrink:0; }
+  .tier-row { flex-shrink:0; min-height:0; }
 
   .mobile-header { display:none !important; }
   body { padding-top:0; }
@@ -706,33 +718,40 @@ header {
     flex-shrink:0;
     margin-right:4px;
   }
-  .landscape-menu-btn.open .mobile-menu-line { background:var(--gold); }
 
   /* Kompaktowe elementy na małym ekranie landscape */
-  .logo { font-size:1.1rem; }
-  .hstat-val { font-size:1.4rem; }
-  .hstat-lbl { font-size:.55rem; }
-  .hstat-sep { height:28px; }
-  .timer-val { font-size:1.6rem; }
-  .timer-bar-bg { width:80px; height:7px; }
-  .timer-lbl-sm { font-size:.5rem; }
-  .lvl-badge { padding:4px 10px; gap:6px; }
-  .badge-lbl { font-size:.75rem; }
+  .logo { font-size:1rem; white-space:nowrap; flex-shrink:0; }
+  .header-stats { gap:8px; flex:1; min-width:0; justify-content:space-evenly; }
+  .hstat { min-width:0; flex-shrink:1; }
+  .hstat-val { font-size:1.2rem; }
+  .hstat-lbl { font-size:.5rem; margin-top:2px; }
+  .hstat-sep { height:24px; flex-shrink:0; }
+  .timer-group { gap:2px; flex-shrink:0; }
+  .timer-val { font-size:1.4rem; }
+  .timer-bar-bg { width:70px; height:6px; }
+  .timer-lbl-sm { font-size:.48rem; }
+  .lvl-badge { padding:3px 8px; gap:5px; flex-shrink:1; }
+  .badge-lbl { font-size:.72rem; }
   .badge-dot { width:8px; height:8px; }
-  .diff-badge { font-size:.65rem; padding:3px 8px; }
-  .city-name { font-size:1.5rem; margin-bottom:4px; }
-  .city-country { font-size:.9rem; min-height:auto; }
-  .city-prompt { font-size:.52rem; margin-bottom:5px; }
-  .city-divider { margin:0 auto 6px; }
-  .city-card { padding:8px 10px; }
-  .progress-wrap { padding:6px 8px; }
-  .prog-score { font-size:.95rem; }
-  .prog-bg { height:8px; }
-  .prog-thr-row { height:14px; }
-  .prog-max { font-size:.58rem; margin-top:2px; }
-  .tier-row { padding:5px 8px; }
-  .tier-name { font-size:.75rem; }
-  .tier-q { font-size:.7rem; }
+  .city-name { font-size:1.35rem; margin-bottom:3px; }
+  .city-country { font-size:.82rem; min-height:auto; line-height:1.2; }
+  .city-prompt { font-size:.5rem; margin-bottom:4px; }
+  .city-divider { margin:0 auto 5px; height:2px; }
+  .city-card { padding:7px 9px; }
+  .progress-wrap { padding:5px 7px; }
+  .prog-header { margin-bottom:4px; }
+  .prog-score { font-size:.85rem; }
+  .prog-title { font-size:.58rem; }
+  .prog-bg { height:6px; }
+  .prog-thr-line { height:6px; }
+  .prog-thr-tick { height:6px; }
+  .prog-thr-row { height:12px; }
+  .prog-thr-lbl { font-size:.52rem; }
+  .prog-max { font-size:.52rem; margin-top:1px; }
+  .tier-row { padding:4px 8px; }
+  .tier-name { font-size:.72rem; }
+  .tier-q { font-size:.65rem; }
+  .tier-dot { width:8px; height:8px; }
 
   /* Baner wyniku — nie zasłania sidebaru */
   #mapOverlay { left:calc(50% - 115px); transform:translateX(-50%); max-width:calc(100vw - 230px - 40px); }
@@ -808,13 +827,60 @@ header {
   .diff-opt-info { display:none !important; }
   .diff-opt, .mode-opt { padding:7px 5px; }
   .nick-input { padding:8px 12px; font-size:.85rem; }
+
+  /* Pass/Fail/End screens — kompaktowe w landscape */
+  #lvlPassScreen .screen-box,
+  #lvlFailScreen .screen-box,
+  #endScreen .screen-box,
+  #lbScreen .screen-box {
+    display:flex;
+    flex-direction:column;
+    padding:14px 24px;
+    max-height:96vh;
+    overflow-y:auto;
+    gap:4px;
+    width:92%;
+    max-width:500px;
+  }
+  #lvlPassScreen .screen-title,
+  #lvlFailScreen .screen-title,
+  #endScreen .screen-title { font-size:1.4rem; margin-bottom:2px; }
+  #lvlPassScreen .screen-score,
+  #lvlFailScreen .screen-score,
+  #endScreen .screen-score { font-size:2rem; margin:2px 0; }
+  #lvlPassScreen .screen-detail,
+  #lvlFailScreen .screen-detail { font-size:.75rem; margin-bottom:6px; line-height:1.5; }
+  #lvlPassScreen .bonus-block,
+  #lvlFailScreen .bonus-block { padding:7px 12px; margin-bottom:6px; }
+  #lvlPassScreen .bonus-pts,
+  #lvlFailScreen .bonus-pts { font-size:1.3rem; }
+  #lvlPassScreen .btn-screen,
+  #lvlFailScreen .btn-screen { padding:9px 20px; font-size:.88rem; margin-top:2px; }
+  #endScreen .screen-sub { font-size:.78rem; margin-bottom:8px; line-height:1.4; }
+  #endScreen .btn-screen { padding:9px 20px; font-size:.88rem; }
+  #endScreen .share-row { margin-top:6px; gap:5px; }
+  #endScreen .share-btn { padding:7px 10px; font-size:.75rem; }
+
+  /* Fail screen — resign i menu w jednej linii */
+  #lvlFailScreen .fail-btns-row {
+    display:flex !important;
+    gap:6px;
+    margin-top:8px;
+    width:100%;
+  }
+  #lvlFailScreen .fail-btns-row .btn-screen {
+    flex:1;
+    padding:8px 6px;
+    font-size:.78rem;
+    margin-left:0;
+    margin-top:0;
+    width:auto !important;
+    display:block;
+  }
 }
 </style>
 
-<!-- Firebase z defer — ładuje się równolegle, nie blokuje renderowania -->
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<!-- Firebase loaded at end of body -->
 </head>
 <body>
 
@@ -823,11 +889,11 @@ header {
   <div class="screen-box" style="max-width:550px">
     <div class="top-row">
       <div class="lang-row" style="margin-bottom:0">
-        <button class="lang-btn active" id="langBtnPL" onclick="setLang('pl')">🇵🇱 PL</button>
-        <button class="lang-btn" id="langBtnEN" onclick="setLang('en')">🇬🇧 EN</button>
+        <button class="lang-btn" id="langBtnPL" onclick="setLang('pl')">🇵🇱 PL</button>
+        <button class="lang-btn active" id="langBtnEN" onclick="setLang('en')">🇬🇧 EN</button>
       </div>
       <div class="theme-row" style="margin-bottom:0">
-        <button class="btn-hdr" onclick="toggleTheme()" id="themeBtn">☀️ Jasny motyw</button>
+        <button class="btn-hdr" onclick="toggleTheme()" id="themeBtn">☀️ Light mode</button>
       </div>
     </div>
 
@@ -911,8 +977,10 @@ header {
     <div class="screen-score" id="lvlFailScore">0</div>
     <p class="screen-detail" id="lvlFailDetail"></p>
     <button class="btn-screen" onclick="retryLevel()" id="fail_retry">↺ Spróbuj ponownie</button>
-    <button class="btn-screen sec" onclick="resignAndSave()" id="fail_resign" style="margin-left:0;margin-top:10px;display:block;width:100%">Zakończ i zapisz wynik</button>
-    <button class="btn-screen sec" onclick="goToStart()" id="fail_menu" style="margin-left:0;margin-top:8px;display:block;width:100%">✕ Menu główne (bez zapisu)</button>
+    <div class="fail-btns-row">
+      <button class="btn-screen sec" onclick="resignAndSave()" id="fail_resign" style="margin-left:0;margin-top:10px;display:block;width:100%">Zakończ i zapisz wynik</button>
+      <button class="btn-screen sec" onclick="goToStart()" id="fail_menu" style="margin-left:0;margin-top:8px;display:block;width:100%">✕ Menu główne (bez zapisu)</button>
+    </div>
   </div>
 </div>
 
@@ -1012,8 +1080,8 @@ header {
   <button class="mobile-dd-item" onclick="showLB();closeMobileMenu()"><span id="m_lbBtn">🏆 Tablica wyników</span></button>
   <button class="mobile-dd-item" onclick="toggleTheme();closeMobileMenu()" id="m_themeBtn"><span id="m_themeLbl">☀️ Jasny motyw</span></button>
   <div class="mobile-dd-sep"></div>
-  <button class="mobile-dd-item danger" onclick="confirmRestart();closeMobileMenu()">↺ <span id="m_restart">Restart</span></button>
-  <button class="mobile-dd-item danger" onclick="goToStart();closeMobileMenu()">✕ <span id="m_mainMenu">Menu główne</span></button>
+  <button class="mobile-dd-item danger" onclick="confirmRestart();closeMobileMenu()"><span id="m_restart">↺ Restart</span></button>
+  <button class="mobile-dd-item danger" onclick="goToStart();closeMobileMenu()"><span id="m_mainMenu">✕ Menu główne</span></button>
 </div>
 
 <header>
@@ -1029,7 +1097,6 @@ header {
       <div class="badge-dot" id="badgeDot"></div>
       <span class="badge-lbl" id="badgeLbl">Poziom 1</span>
     </div>
-    <span class="diff-badge diff-easy" id="diffBadge">Łatwy</span>
 
     <div class="hstat-sep"></div>
     <div class="hstat">
@@ -1094,7 +1161,7 @@ header {
       <div class="city-country" id="cityCountry">–</div>
     </div>
 
-    <!-- Progress -->
+    <!-- Progress (pasek) + To-pass (landscape) -->
     <div class="progress-wrap">
       <div class="prog-header">
         <span class="prog-title" id="g_lvlScore">Wynik poziomu</span>
@@ -1106,6 +1173,11 @@ header {
       <div class="prog-thr-line"><div class="prog-thr-tick" id="thrTick" style="left:50%"></div></div>
       <div class="prog-thr-row"><div class="prog-thr-lbl" id="thrLbl" style="left:50%">próg 50%</div></div>
       <div class="prog-max" id="progMax">maks. 8000 pkt</div>
+    </div>
+    <!-- To-pass widget — widoczny tylko w landscape -->
+    <div class="topass-wrap" id="topassWrap">
+      <div class="topass-lbl" id="sb_toPassLbl">to pass</div>
+      <div class="topass-val" id="sb_toPass">–</div>
     </div>
 
     <!-- Tier info row -->
@@ -1119,7 +1191,7 @@ header {
 
 <script>
 // ══ I18N ══════════════════════════════════════════════════════════════════
-let LANG = 'pl';
+let LANG = 'en';
 
 const I18N = {
   pl: {
@@ -1181,20 +1253,19 @@ const I18N = {
     ],
     // share text
     shareText:(score,mode,diff)=>`🌍 Traveler Challenge
-Wynik: ${score.toLocaleString('pl')} pkt | Tryb: ${mode==='europe'?'Europa':'Świat'} | Poziom: ${diff}
+Wynik: ${score.toLocaleString(LANG==='pl'?'pl':'en')} pkt | Tryb: ${mode==='europe'?'Europa':'Świat'} | Poziom: ${diff}
 https://grgbrg.github.io/traveler-challange`,
     // misc
     thrLabel:(pct)=>`próg ${pct}%`,
-    maxPtsLabel:(pts)=>`maks. ${pts.toLocaleString('pl')} pkt`,
+    maxPtsLabel:(pts)=>`maks. ${pts.toLocaleString(LANG==='pl'?'pl':'en')} pkt`,
     qLabel:(q,total)=>`pyt. ${q}/${total}`,
     nickRequired:'Nick jest wymagany!',
     nickPlaceholderError:'Nick jest wymagany!',
     themeLight:'☀️ Jasny motyw', themeDark:'🌙 Ciemny motyw',
-    lvlPassDetail:(pct,thr,thrPts,total)=>`${pct}% maks. punktów  •  próg: ${thr}% (${thrPts.toLocaleString('pl')} pkt)
-Łączny wynik: ${total.toLocaleString('pl')} pkt`,
-    lvlFailDetail:(pct,thr,thrPts,diff,total)=>`${pct}% maks. punktów  •  potrzeba: ${thr}% (${thrPts.toLocaleString('pl')} pkt)
-Brakło: ${diff.toLocaleString('pl')} pkt
-Łączny wynik: ${total.toLocaleString('pl')} pkt`,
+    lvlPassDetail:(pct,thr,thrPts,total)=>`${pct}% maks. punktów  •  próg: ${thr}% (${thrPts.toLocaleString(LANG==='pl'?'pl':'en')} pkt)
+Łączny wynik: ${total.toLocaleString(LANG==='pl'?'pl':'en')} pkt`,
+    lvlFailDetail:(pct,thr,thrPts,diff,total)=>`${pct}% maks. punktów  •  potrzeba: ${thr}% (${thrPts.toLocaleString(LANG==='pl'?'pl':'en')} pkt)
+Łączny wynik: ${total.toLocaleString(LANG==='pl'?'pl':'en')} pkt`,
     top10sub:(rank)=>`Miejsce #${rank+1} w tabeli najlepszych!`,
   },
   en: {
@@ -1268,7 +1339,6 @@ https://grgbrg.github.io/traveler-challange`,
     lvlPassDetail:(pct,thr,thrPts,total)=>`${pct}% of max points  •  threshold: ${thr}% (${thrPts.toLocaleString('en')} pts)
 Total score: ${total.toLocaleString('en')} pts`,
     lvlFailDetail:(pct,thr,thrPts,diff,total)=>`${pct}% of max points  •  needed: ${thr}% (${thrPts.toLocaleString('en')} pts)
-Missed by: ${diff.toLocaleString('en')} pts
 Total score: ${total.toLocaleString('en')} pts`,
     top10sub:(rank)=>`Ranked #${rank+1} on the leaderboard!`,
   }
@@ -1357,6 +1427,7 @@ function applyI18n(){
   st('m_restart', L.restart  || 'Restart');
   st('m_mainMenu', LANG==='pl' ? 'Menu główne' : 'Main Menu');
   st('m_toPassLbl', LANG==='pl' ? 'do progu' : 'to pass');
+  st('sb_toPassLbl', LANG==='pl' ? 'do progu' : 'to pass');
   const mThemeLbl = document.getElementById('m_themeLbl');
   if(mThemeLbl) mThemeLbl.textContent = dark_now ? L.themeLight : L.themeDark;
   const mLb = document.getElementById('m_lbBtn');
@@ -2344,7 +2415,7 @@ function renderLBRows(entries, hi=-1, emptyMsg=''){
     <td class="lb-rank ${i<3?'top3':''}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
     <td class="lb-nick">${e.nick}</td>
     <td><span class="lb-dbadge ${dcls[e.diff]||'lb-easy'}">${dlbl[e.diff]||e.diff}</span></td>
-    <td class="lb-score">${e.score.toLocaleString('pl')}</td>
+    <td class="lb-score">${e.score.toLocaleString(LANG==='pl'?'pl':'en')}</td>
   </tr>`).join('');
 }
 
@@ -2460,8 +2531,7 @@ function startGame(){
   G.lvlRestarts=0; G.shownThisLevel=new Set();
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('mobileHeader').style.display = '';
-  const db=document.getElementById('diffBadge');
-  db.textContent=I18N[LANG].diffLabels[G.diff]||G.diff; db.className='diff-badge '+G.diffCfg.cls;
+
   applyBounds(G.mode==='europe' ? EU_BOUNDS : WORLD_BOUNDS, loadLevel);
 }
 function loadLevel(){
@@ -2610,7 +2680,7 @@ function showOverlay(km,distPts,timePts){
     timeBonusEl.classList.add('hidden');
   }else{
     toEl.classList.add('hidden');
-    distEl.innerHTML=`${Math.round(km).toLocaleString('pl')} <em>km</em>`;
+    distEl.innerHTML=`${Math.round(km).toLocaleString(LANG==='pl'?'pl':'en')} <em>km</em>`;
     const total=distPts+(timePts||0);
     ptsEl.textContent=`+${total}`;
     const maxQ=Math.round(BASE_MAX*G.diffCfg.mult);
@@ -2698,10 +2768,10 @@ function updateHeader(){
   updateScoreDisplays();
 }
 function updateScoreDisplays(){
-  document.getElementById('scoreDisplay').textContent=G.lvlScore.toLocaleString('pl');
-  document.getElementById('totalDisplay').textContent=G.totalScore.toLocaleString('pl');
+  document.getElementById('scoreDisplay').textContent=G.lvlScore.toLocaleString(LANG==='pl'?'pl':'en');
+  document.getElementById('totalDisplay').textContent=G.totalScore.toLocaleString(LANG==='pl'?'pl':'en');
   const mScore=document.getElementById('m_scoreDisplay');
-  if(mScore) mScore.textContent=G.lvlScore.toLocaleString('pl');
+  if(mScore) mScore.textContent=G.lvlScore.toLocaleString(LANG==='pl'?'pl':'en');
 }
 function updateProgress(){
   const pct=Math.min(100,G.lvlScore/maxPts()*100);
@@ -2709,25 +2779,22 @@ function updateProgress(){
   bar.style.width=pct+'%';
   const tc=TIER_COLORS[LEVELS[G.levelIdx].tier];
   bar.style.background=pct>=thrPct()?`linear-gradient(90deg,${tc},#a3e0c0)`:'linear-gradient(90deg,#444,#666)';
-  document.getElementById('progScore').textContent=G.lvlScore.toLocaleString('pl');
+  document.getElementById('progScore').textContent=G.lvlScore.toLocaleString(LANG==='pl'?'pl':'en');
   document.getElementById('progMax').textContent=I18N[LANG].maxPtsLabel(maxPts());
   const t=thrPct();
   document.getElementById('thrTick').style.left=t+'%';
   document.getElementById('thrLbl').style.left=t+'%';
   document.getElementById('thrLbl').textContent=I18N[LANG].thrLabel(t);
-  // mobile: punkty do progu
+  // mobile + landscape sidebar: punkty do progu
+  const needed=Math.ceil(thrPct()/100*maxPts());
+  const remaining=needed-G.lvlScore;
+  const passed=remaining<=0;
+  const toPassTxt=passed?'✓':remaining.toLocaleString(LANG==='pl'?'pl':'en');
+  const toPassColor=passed?'var(--green)':'var(--gold-light)';
   const mToPass=document.getElementById('m_toPass');
-  if(mToPass){
-    const needed=Math.ceil(thrPct()/100*maxPts());
-    const remaining=needed-G.lvlScore;
-    if(remaining<=0){
-      mToPass.textContent='✓';
-      mToPass.style.color='var(--green)';
-    } else {
-      mToPass.textContent=remaining.toLocaleString('pl');
-      mToPass.style.color='var(--gold-light)';
-    }
-  }
+  if(mToPass){ mToPass.textContent=toPassTxt; mToPass.style.color=toPassColor; }
+  const sbToPass=document.getElementById('sb_toPass');
+  if(sbToPass){ sbToPass.textContent=toPassTxt; sbToPass.style.color=toPassColor; }
 }
 function clearMapLayers(){
   G.markers.forEach(m=>map.removeLayer(m));G.markers=[];
@@ -2783,6 +2850,8 @@ document.addEventListener('click', function(e){
 
 // Inicjalizacja języka
 applyI18n();
+
+
 </script>
 
 <!-- Firebase — ładowane na końcu żeby nie blokować renderowania -->

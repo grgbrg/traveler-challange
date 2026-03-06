@@ -367,6 +367,7 @@ header {
   line-height:1.9; margin-bottom:20px;
 }
 .start-rules strong { color:var(--text2); }
+.rules-short { display:none; }
 .theme-row { display:flex; justify-content:flex-end; margin-bottom:14px; }
 .top-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
 
@@ -480,7 +481,9 @@ header {
   .screen-title { font-size:1.6rem; }
   .start-logo { margin-bottom:2px; }
   .start-tagline { margin-bottom:8px; }
-  .start-rules { margin-bottom:8px; font-size:.8rem; line-height:1.5; }
+  .start-rules { margin:6px 0; font-size:.88rem; line-height:1.7; display:flex; align-items:center; }
+  .rules-full { display:none; }
+  .rules-short { display:block; }
 
 
 
@@ -820,7 +823,9 @@ header {
   .start-tagline { display:none; }
   .start-form { margin-bottom:0; gap:6px; }
   .start-form-options { display:flex !important; flex-direction:column; gap:8px; flex:1; min-width:0; overflow:hidden; }
-  .start-rules { font-size:.7rem; line-height:1.5; margin-bottom:0; flex:1; min-width:0; overflow-y:auto; }
+  .start-rules { margin:6px 0; font-size:.86rem; line-height:1.7; display:flex; align-items:center; flex:0 0 auto; }
+  .rules-full { display:none; }
+  .rules-short { display:block; }
   .start-btns { margin-top:auto; flex-direction:row; gap:8px; }
   #startScreen .btn-screen { flex:1; padding:9px; font-size:.85rem; }
 
@@ -941,10 +946,9 @@ header {
           </div>
         </div>
       </div>
-      <div class="start-rules" id="s_rules">
-        <strong>Wskaż miasto na mapie zanim upłynie czas.</strong><br>
-        Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>
-        Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.
+      <div class="start-rules">
+        <span id="s_rules" class="rules-full"></span>
+        <span id="s_rulesShort" class="rules-short"></span>
       </div>
       <div class="start-btns">
         <button class="btn-screen" onclick="startGame()" id="s_startBtn">Rozpocznij podróż →</button>
@@ -1204,6 +1208,7 @@ const I18N = {
     medium:'Średni', mediumInfo:'Widoczne kraje.<br>Próg: 65% → 75%.<br><strong>Więcej punktów!</strong>',
     hard:'Trudny', hardInfo:'Bez krajów.<br>Próg: 75% → 85%.<br><strong>Jeszcze więcej punktów!</strong>',
     rules:'<strong>Wskaż miasto na mapie zanim upłynie czas.</strong><br>Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.',
+    rulesShort:'<strong>Wskaż miasto przed upływem czasu.</strong><br>Bliżej i szybciej = więcej punktów!',
     startBtn:'Zagraj →', lbBtn:'🏆 Wyniki',
     // header
     lvlLbl:'Poziom', totalLbl:'Łącznie', qLbl:'Pytanie', secLbl:'sekund',
@@ -1278,6 +1283,7 @@ https://grgbrg.github.io/traveler-challange`,
     medium:'Medium', mediumInfo:'Countries shown.<br>Threshold: 65% → 75%.<br><strong>More points!</strong>',
     hard:'Hard', hardInfo:'No countries shown.<br>Threshold: 75% → 85%.<br><strong>Even more points!</strong>',
     rules:'<strong>Find the city on the map before time runs out.</strong><br>The <strong>closer and faster</strong> you click, the more points!<br>Earn a <strong>Bonus</strong> for passing a level on your first try.',
+    rulesShort:'<strong>Find the city before time runs out.</strong><br>Closer and faster = more points!',
     startBtn:'Start Journey →', lbBtn:'🏆 Leaderboard',
     // header
     lvlLbl:'Level', totalLbl:'Total', qLbl:'Question', secLbl:'seconds',
@@ -1372,6 +1378,7 @@ function applyI18n(){
   st('s_medium', L.medium); s('s_mediumInfo', L.mediumInfo);
   st('s_hard', L.hard); s('s_hardInfo', L.hardInfo);
   s('s_rules', L.rules);
+  s('s_rulesShort', L.rulesShort||L.rules);
   st('s_startBtn', L.startBtn);
   st('s_lbBtn', L.lbBtn);
   // header

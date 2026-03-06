@@ -1200,9 +1200,9 @@ const I18N = {
     modeLbl:'Tryb gry', modeWorld:'Świat', modeWorldInfo:'Miasta całego świata',
     modeEurope:'Europa', modeEuropeInfo:'Miasta Europy',
     diffLbl:'Poziom trudności',
-    easy:'Łatwy', easyInfo:'Widoczne kraje.<br>Stały próg zaliczenia.',
-    medium:'Średni', mediumInfo:'Widoczne kraje.<br>Malejący próg.<br><strong>Więcej punktów!</strong>',
-    hard:'Trudny', hardInfo:'Bez krajów.<br>Malejący próg.<br>Jeszcze więcej punktów!',
+    easy:'Łatwy', easyInfo:'Widoczne kraje.<br>Próg: 50%.',
+    medium:'Średni', mediumInfo:'Widoczne kraje.<br>Próg: 65% → 75%.<br><strong>Więcej punktów!</strong>',
+    hard:'Trudny', hardInfo:'Bez krajów.<br>Próg: 75% → 85%.<br><strong>Jeszcze więcej punktów!</strong>',
     rules:'<strong>Wskaż miasto na mapie zanim upłynie czas.</strong><br>Im <strong>bliżej i szybciej</strong>, tym więcej punktów!<br>Zgarnij <strong>Bonus</strong> za zaliczenie poziomu za pierwszym razem.',
     startBtn:'Zagraj →', lbBtn:'🏆 Wyniki',
     // header
@@ -1274,9 +1274,9 @@ https://grgbrg.github.io/traveler-challange`,
     modeLbl:'Game mode', modeWorld:'World', modeWorldInfo:'Cities worldwide',
     modeEurope:'Europe', modeEuropeInfo:'European cities',
     diffLbl:'Difficulty',
-    easy:'Easy', easyInfo:'Countries shown.<br>Fixed pass threshold.',
-    medium:'Medium', mediumInfo:'Countries shown.<br>Decreasing threshold.<br><strong>More points!</strong>',
-    hard:'Hard', hardInfo:'No countries shown.<br>Decreasing threshold.<br>Even more points!<br> ',
+    easy:'Easy', easyInfo:'Countries shown.<br>Threshold: 50%.',
+    medium:'Medium', mediumInfo:'Countries shown.<br>Threshold: 65% → 75%.<br><strong>More points!</strong>',
+    hard:'Hard', hardInfo:'No countries shown.<br>Threshold: 75% → 85%.<br><strong>Even more points!</strong>',
     rules:'<strong>Find the city on the map before time runs out.</strong><br>The <strong>closer and faster</strong> you click, the more points!<br>Earn a <strong>Bonus</strong> for passing a level on your first try.',
     startBtn:'Start Journey →', lbBtn:'🏆 Leaderboard',
     // header
@@ -1469,8 +1469,8 @@ function shareClipboard(){
 // ══ DIFFICULTY ════════════════════════════════════════════════════════════
 const DIFF={
   easy:  {cls:'diff-easy', mult:1,   showCountry:true,  timerSec:15, timeBonusPts:10, thresholds:[50,50,50,50,50,50,50,50,50,50,50,50]},
-  medium:{cls:'diff-med',  mult:1.5, showCountry:true,  timerSec:10, timeBonusPts:10, thresholds:[70,68,66,64,62,60,58,56,54,52,51,50]},
-  hard:  {cls:'diff-hard', mult:2,   showCountry:false, timerSec:8,  timeBonusPts:10, thresholds:[70,68,66,64,62,60,58,56,54,52,51,50]},
+  medium:{cls:'diff-med',  mult:1.5, showCountry:true,  timerSec:10, timeBonusPts:10, thresholds:[65,65,65,65,65,65,65,65,65,75,75,75]},
+  hard:  {cls:'diff-hard', mult:2,   showCountry:false, timerSec:8,  timeBonusPts:10, thresholds:[75,75,75,75,75,75,75,75,75,85,85,85]},
 };
 const LEVELS=[
   {tier:1},{tier:1},{tier:1},

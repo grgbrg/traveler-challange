@@ -256,7 +256,7 @@ header {
   margin-left:10px; font-weight:500;
 }
 .btn-screen.sec:hover { border-color:var(--muted); color:var(--muted2); transform:none; }
-[data-theme="light"] .btn-screen.sec:hover { border-color:var(--gold); color:var(--gold); }
+[data-theme="light"] .btn-screen.sec:hover { border-color:var(--gold); color:var(--green-light); }
 .overlay-pass { border-color:var(--green)!important; }
 .overlay-fail { border-color:var(--red)!important; }
 .pass-title { color:var(--green)!important; }
@@ -384,7 +384,216 @@ header {
 .share-facebook { background:#1877f2; }
 .share-copy { background:var(--panel2); color:var(--text); border:1px solid var(--border); }
 .share-copy:hover { border-color:var(--gold); color:var(--gold); }
+/* ══ MOBILE (max 767px) ════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* Ukryj desktop header i sidebar */
+  header { display:none !important; }
+  .sidebar { display:none !important; }
+
+  /* Layout — mapa fullscreen pod mobile headerem */
+  body { padding-top:0; }
+  .game-area { flex-direction:column; }
+  #map { flex:1; width:100%; }
+
+  /* Mobile header */
+  .mobile-header {
+    display:flex !important;
+    flex-direction:column;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    box-shadow:0 2px 8px rgba(0,0,0,.2);
+    z-index:1000;
+    flex-shrink:0;
+    padding-top:env(safe-area-inset-top, 0px);
+  }
+
+  .mobile-topbar {
+    display:flex;
+    align-items:center;
+    height:52px;
+    padding:0 10px;
+    gap:8px;
+  }
+
+  /* Menu button */
+  .mobile-menu-btn {
+    width:36px; height:36px;
+    border-radius:9px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .mobile-menu-line {
+    width:16px; height:2px;
+    background:var(--muted);
+    border-radius:2px;
+    transition:background .2s;
+  }
+  .mobile-menu-btn.open .mobile-menu-line { background:var(--gold); }
+
+  /* Stats w środku */
+  .mobile-stats {
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+  .mobile-stat {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-width:40px;
+  }
+  .mobile-stat-val {
+    font-family:'Playfair Display',serif;
+    font-size:1rem;
+    font-weight:700;
+    color:var(--gold-light);
+    line-height:1;
+  }
+  .mobile-stat-lbl {
+    font-size:.5rem;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    font-weight:700;
+    margin-top:1px;
+  }
+  .mobile-sep {
+    width:1px; height:22px;
+    background:var(--border);
+    flex-shrink:0;
+  }
+
+  /* Timer */
+  .mobile-timer-val {
+    font-family:'Playfair Display',serif;
+    font-size:1rem;
+    font-weight:900;
+    color:var(--gold-light);
+    line-height:1;
+  }
+
+  /* City — po prawej */
+  .mobile-city {
+    display:flex !important;
+    flex-direction:column;
+    align-items:flex-end;
+    justify-content:center;
+    flex-shrink:0;
+    max-width:38%;
+  }
+  .mobile-city-prompt {
+    font-size:.45rem;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    font-weight:700;
+    line-height:1;
+  }
+  .mobile-city-name {
+    font-family:'Playfair Display',serif;
+    font-weight:900;
+    color:var(--gold-light);
+    line-height:1.1;
+    white-space:nowrap;
+    font-size:1rem;
+    text-align:right;
+  }
+  .mobile-city-country {
+    font-size:.58rem;
+    color:var(--muted);
+    font-weight:600;
+    white-space:nowrap;
+    text-align:right;
+  }
+
+  /* Pasek postępu */
+  .mobile-progress {
+    height:3px;
+    background:var(--border);
+    width:100%;
+  }
+  .mobile-progress-fill {
+    height:100%;
+    background:var(--green);
+    border-radius:0 2px 2px 0;
+    transition:width .4s ease;
+  }
+
+  /* Dropdown menu */
+  .mobile-dropdown {
+    display:none;
+    position:absolute;
+    top:calc(52px + env(safe-area-inset-top, 0px) + 3px);
+    left:10px;
+    width:190px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:6px;
+    z-index:2000;
+    box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  .mobile-dropdown.open { display:block; }
+  .mobile-dd-item {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:8px;
+    color:var(--text2);
+    font-size:.88rem;
+    font-weight:600;
+    cursor:pointer;
+    border:none;
+    background:none;
+    width:100%;
+    text-align:left;
+    font-family:'DM Sans',sans-serif;
+  }
+  .mobile-dd-item:hover { background:var(--panel2); }
+  .mobile-dd-item.danger { color:var(--red); }
+  .mobile-dd-sep { height:1px; background:var(--border); margin:4px 0; }
+
+  /* Screens na mobile — mniejszy padding */
+  .screen-box { padding:28px 20px; }
+  .screen-title { font-size:2rem; }
+
+  /* Map overlay na mobile */
+  #mapOverlay {
+    bottom:16px;
+    width:calc(100% - 24px);
+    max-width:none;
+    left:12px;
+    transform:none;
+  }
+  .mo-box {
+    padding:14px 16px;
+    gap:12px;
+    border-radius:14px;
+  }
+  .mo-dist-wrap { min-width:0; flex:1; }
+  .mo-pts-wrap  { min-width:0; flex:1; }
+  .mo-dist-val  { font-size:1.6rem; }
+  .mo-pts-val   { font-size:1.6rem; }
+  .mo-sep       { height:40px; }
+  .mo-btn       { padding:10px 14px; font-size:.88rem; }
+}
+
+/* Ukryj mobile elementy na desktop */
+.mobile-header { display:none; }
+.mobile-dropdown { display:none; }
 </style>
+
 <!-- Firebase z defer — ładuje się równolegle, nie blokuje renderowania -->
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -519,6 +728,57 @@ header {
 </div>
 
 <!-- ══ HEADER ══════════════════════════════════════════════════════════════ -->
+<!-- ══ MOBILE HEADER ════════════════════════════════════════════════════════ -->
+<div class="mobile-header" id="mobileHeader" style="display:none">
+  <div class="mobile-topbar">
+    <!-- Menu -->
+    <div class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">
+      <div class="mobile-menu-line"></div>
+      <div class="mobile-menu-line"></div>
+      <div class="mobile-menu-line"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="mobile-stats">
+      <div class="mobile-stat">
+        <div class="mobile-stat-val" id="m_qDisplay">1/8</div>
+        <div class="mobile-stat-lbl" id="m_qLbl">Pytanie</div>
+      </div>
+      <div class="mobile-sep"></div>
+      <div class="mobile-stat">
+        <div class="mobile-stat-val" id="m_scoreDisplay">0</div>
+        <div class="mobile-stat-lbl" id="m_lvlLbl">Poziom</div>
+      </div>
+      <div class="mobile-sep"></div>
+      <div class="mobile-stat">
+        <div class="mobile-timer-val" id="m_timerVal">15</div>
+        <div class="mobile-stat-lbl" id="m_secLbl">sekund</div>
+      </div>
+    </div>
+
+    <!-- City -->
+    <div class="mobile-city">
+      <div class="mobile-city-prompt" id="m_findLbl">Znajdź</div>
+      <div class="mobile-city-name" id="m_cityName">–</div>
+      <div class="mobile-city-country" id="m_cityCountry"></div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="mobile-progress">
+    <div class="mobile-progress-fill" id="m_progressFill" style="width:0%"></div>
+  </div>
+</div>
+
+<!-- Dropdown menu -->
+<div class="mobile-dropdown" id="mobileDropdown">
+  <button class="mobile-dd-item" onclick="showLB();closeMobileMenu()">🏆 <span id="m_lbBtn">Tablica wyników</span></button>
+  <button class="mobile-dd-item" onclick="toggleTheme();closeMobileMenu()" id="m_themeBtn">☀️ <span id="m_themeLbl">Jasny motyw</span></button>
+  <div class="mobile-dd-sep"></div>
+  <button class="mobile-dd-item danger" onclick="confirmRestart();closeMobileMenu()">↺ <span id="m_restart">Restart</span></button>
+  <button class="mobile-dd-item danger" onclick="goToStart();closeMobileMenu()">✕ <span id="m_mainMenu">Menu główne</span></button>
+</div>
+
 <header>
   <div class="logo" onclick="goToStart()" style="cursor:pointer" title="Menu główne" id="logoTitle">Traveler <em>Challenge</em></div>
 
@@ -703,7 +963,7 @@ Brakło: ${diff.toLocaleString('pl')} pkt
     diffLbl:'Difficulty',
     easy:'Easy', easyInfo:'Countries shown.<br>Fixed pass threshold.',
     medium:'Medium', mediumInfo:'Countries shown.<br>Decreasing threshold.<br><strong>More points!</strong>',
-    hard:'Hard', hardInfo:'No countries shown.<br>Decreasing threshold.<br>Even more points!',
+    hard:'Hard', hardInfo:'No countries shown.<br>Decreasing threshold.<br>Even more points!<br> ',
     rules:'<strong>Find the city on the map before time runs out.</strong><br>The <strong>closer and faster</strong> you click, the more points!<br>Earn a <strong>Bonus</strong> for passing a level on your first try.',
     startBtn:'Start Journey →', lbBtn:'🏆 Leaderboard',
     // header
@@ -1943,6 +2203,7 @@ function startGame(){
   G.queue=[]; G.current=null; G.answered=false;
   G.lvlRestarts=0; G.shownThisLevel=new Set();
   document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('mobileHeader').style.display = '';
   const db=document.getElementById('diffBadge');
   db.textContent=I18N[LANG].diffLabels[G.diff]||G.diff; db.className='diff-badge '+G.diffCfg.cls;
   applyBounds(G.mode==='europe' ? EU_BOUNDS : WORLD_BOUNDS, loadLevel);
@@ -1997,6 +2258,7 @@ function goToStart(){
   // Reset widoku mapy
   applyBounds(WORLD_BOUNDS);
   document.getElementById('startScreen').classList.remove('hidden');
+  document.getElementById('mobileHeader').style.display = 'none';
 }
 
 function loadQuestion(){
@@ -2012,6 +2274,8 @@ function loadQuestion(){
   else{cEl.textContent=I18N[LANG].country_unknown;cEl.className='city-country unknown';}
   document.getElementById('qDisplay').textContent=`${G.qIdx+1}/${Q_PER_LVL}`;
   document.getElementById('tierQ').textContent=I18N[LANG].qLabel(G.qIdx+1,Q_PER_LVL);
+  // sync mobile header
+  syncMobileHeader();
   resetView();
   startTimer();
 }
@@ -2037,6 +2301,11 @@ function updateTimerDisplay(){
   val.classList.toggle('urgent',urgent);
   // efekt paniki — pulsowanie całego timera przy ≤3s
   grp.classList.toggle('panic',panic);
+  // sync mobile
+  const mVal=document.getElementById('m_timerVal');
+  if(mVal){ mVal.textContent=G.timerSec; mVal.classList.toggle('urgent',urgent); }
+  const mProg=document.getElementById('m_progressFill');
+  if(mProg) mProg.style.width=pct+'%';
 }
 function timeOut(){G.answered=true;placeTarget();map.panTo([G.current.la,G.current.lo],{animate:true,duration:0.6});showOverlay(null,0);}
 
@@ -2175,6 +2444,8 @@ function updateHeader(){
 function updateScoreDisplays(){
   document.getElementById('scoreDisplay').textContent=G.lvlScore.toLocaleString('pl');
   document.getElementById('totalDisplay').textContent=G.totalScore.toLocaleString('pl');
+  const mScore=document.getElementById('m_scoreDisplay');
+  if(mScore) mScore.textContent=G.lvlScore.toLocaleString('pl');
 }
 function updateProgress(){
   const pct=Math.min(100,G.lvlScore/maxPts()*100);
@@ -2193,6 +2464,64 @@ function clearMapLayers(){
   G.markers.forEach(m=>map.removeLayer(m));G.markers=[];
   if(G.line){map.removeLayer(G.line);G.line=null;}
 }
+// ══ MOBILE ════════════════════════════════════════════════════════════════
+function isMobile(){ return window.innerWidth <= 767; }
+
+function syncMobileHeader(){
+  if(!isMobile() || !G || !G.current) return;
+  const name = G.current.n;
+  const mName = document.getElementById('m_cityName');
+  if(mName){
+    mName.textContent = name;
+    const len = name.length;
+    mName.style.fontSize = len <= 8 ? '1rem' : len <= 14 ? '.82rem' : '.65rem';
+  }
+  const hideCountry = !G.diffCfg.showCountry || (G.levelIdx>=9);
+  const mCountry = document.getElementById('m_cityCountry');
+  if(mCountry) mCountry.textContent = hideCountry ? '' : G.current.c;
+  const mQ = document.getElementById('m_qDisplay');
+  if(mQ) mQ.textContent = `${G.qIdx+1}/${Q_PER_LVL}`;
+}
+
+function toggleMobileMenu(){
+  const dd = document.getElementById('mobileDropdown');
+  const btn = document.getElementById('mobileMenuBtn');
+  const open = dd.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+function closeMobileMenu(){
+  document.getElementById('mobileDropdown').classList.remove('open');
+  document.getElementById('mobileMenuBtn').classList.remove('open');
+}
+
+document.addEventListener('click', function(e){
+  const dd = document.getElementById('mobileDropdown');
+  const btn = document.getElementById('mobileMenuBtn');
+  if(dd && dd.classList.contains('open') && !dd.contains(e.target) && !btn.contains(e.target)){
+    closeMobileMenu();
+  }
+});
+
+// Wrap applyI18n żeby aktualizować też mobile elementy
+const _origApplyI18n = applyI18n;
+applyI18n = function(){
+  _origApplyI18n();
+  const L = I18N[LANG];
+  const st = (id, txt) => { const el=document.getElementById(id); if(el) el.textContent=txt; };
+  st('m_qLbl',    L.qLbl    || 'Pytanie');
+  st('m_lvlLbl',  L.lvlLbl  || 'Poziom');
+  st('m_secLbl',  L.secLbl  || 'sekund');
+  st('m_findLbl', L.findCity  || 'Znajdź');
+  st('m_restart', L.restart   || 'Restart');
+  st('m_mainMenu', LANG==='pl' ? 'Menu główne' : 'Main Menu');
+  const themeLbl = document.getElementById('m_themeLbl');
+  if(themeLbl) themeLbl.textContent = document.documentElement.getAttribute('data-theme')==='dark'
+    ? (L.lightTheme || 'Jasny motyw') : (L.darkTheme || 'Ciemny motyw');
+  const mLb = document.getElementById('m_lbBtn');
+  if(mLb) mLb.textContent = L.lbBtn || '🏆 Wyniki';
+};
+
 // Inicjalizacja języka
 applyI18n();
 </script>
